@@ -1,98 +1,446 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Donation Service - Sangue Solidário
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Um microsserviço desenvolvido em **NestJS** para gerenciar doações no sistema Sangue Solidário, seguindo os princípios da **Arquitetura Hexagonal (Ports and Adapters)** e **Clean Architecture**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 📋 Índice
 
-## Description
+- [Visão Geral](#visão-geral)
+- [Arquitetura](#arquitetura)
+- [Tecnologias Utilizadas](#tecnologias-utilizadas)
+- [Estrutura do Projeto](#estrutura-do-projeto)
+- [Funcionalidades](#funcionalidades)
+- [Configuração e Instalação](#configuração-e-instalação)
+- [API Endpoints](#api-endpoints)
+- [Modelo de Dados](#modelo-de-dados)
+- [Padrões de Design](#padrões-de-design)
+- [Testes](#testes)
+- [Docker](#docker)
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 🎯 Visão Geral
 
-## Project setup
+O **Donation Service** é um microsserviço responsável por gerenciar o ciclo de vida das doações de sangue na plataforma Sangue Solidário. O serviço permite criar novas doações e atualizar seus status, mantendo um controle completo do processo de doação.
 
-```bash
-$ npm install
+### Principais Características:
+
+- **Arquitetura Hexagonal**: Separação clara entre domínio, aplicação e infraestrutura
+- **Clean Architecture**: Inversão de dependências e baixo acoplamento
+- **Domain-Driven Design (DDD)**: Modelagem focada no domínio de negócio
+- **SOLID Principles**: Código limpo e manutenível
+- **Result Pattern**: Tratamento de erros funcional
+- **MongoDB**: Persistência de dados NoSQL
+- **Docker**: Containerização para desenvolvimento e produção
+
+## 🏗️ Arquitetura
+
+O projeto segue a **Arquitetura Hexagonal** (Ports and Adapters), organizando o código em camadas bem definidas:
+
+```
+src/
+├── application/           # Camada de Aplicação
+│   ├── core/             # Núcleo da aplicação
+│   │   ├── domain/       # Entidades de domínio
+│   │   ├── errors/       # Enums de erros
+│   │   └── service/      # Serviços da aplicação
+│   └── ports/            # Interfaces (Contratos)
+│       ├── in/           # Casos de uso (entrada)
+│       └── out/          # Portas de saída (repositórios)
+├── adapters/             # Camada de Adaptadores
+│   ├── in/              # Adaptadores de entrada (Controllers)
+│   └── out/             # Adaptadores de saída (Repositories)
+├── types/               # Tipos e interfaces globais
+└── constants/           # Constantes da aplicação
 ```
 
-## Compile and run the project
+### Fluxo de Dados:
 
-```bash
-# development
-$ npm run start
+1. **Controller** (Adapter In) → recebe requisições HTTP
+2. **Service** (Application) → orquestra os casos de uso
+3. **Use Case** (Port In) → implementa regras de negócio
+4. **Repository** (Adapter Out) → persiste dados no MongoDB
 
-# watch mode
-$ npm run start:dev
+## 🛠️ Tecnologias Utilizadas
 
-# production mode
-$ npm run start:prod
+### Core
+
+- **Node.js** - Runtime JavaScript
+- **TypeScript** - Tipagem estática
+- **NestJS** - Framework backend escalável
+
+### Banco de Dados
+
+- **MongoDB** - Banco de dados NoSQL
+- **Mongoose** - ODM para MongoDB
+
+### Desenvolvimento
+
+- **Docker** - Containerização
+- **Docker Compose** - Orquestração de containers
+- **ESLint** - Linting de código
+- **Prettier** - Formatação de código
+- **Jest** - Framework de testes
+
+### Produção
+
+- **dotenv** - Gerenciamento de variáveis de ambiente
+- **RxJS** - Programação reativa
+
+## 📁 Estrutura do Projeto
+
+### Camada de Domínio
+
+```typescript
+// Domain Entity
+export class Donation {
+  id: string;
+  status: DonationStatus;
+  content: string;
+  startDate: DateType;
+  finishDate?: DateType;
+}
+
+// Domain Enums
+export enum DonationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  COMPLETED = 'COMPLETED',
+  CANCELED = 'CANCELED',
+}
 ```
 
-## Run tests
+### Camada de Aplicação
 
-```bash
-# unit tests
-$ npm run test
+```typescript
+// Use Cases (Ports In)
+- CreateDonationUseCase: Criar nova doação
+- UpdateStatusUseCase: Atualizar status da doação
 
-# e2e tests
-$ npm run test:e2e
+// Repository Port (Port Out)
+- DonationRepositoryPort: Interface para persistência
 
-# test coverage
-$ npm run test:cov
+// Application Service
+- DonationService: Orquestração dos casos de uso
 ```
 
-## Deployment
+### Camada de Adaptadores
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+```typescript
+// Controller (Adapter In)
+- DonationController: Endpoints REST
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+// Repository (Adapter Out)
+- DonationRepository: Implementação MongoDB
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## ⚡ Funcionalidades
 
-## Resources
+### 1. Criar Doação
 
-Check out a few resources that may come in handy when working with NestJS:
+- **Endpoint**: `POST /donations`
+- **Descrição**: Cria uma nova doação no sistema
+- **Status Inicial**: `PENDING`
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### 2. Atualizar Status da Doação
 
-## Support
+- **Endpoint**: `PUT /donations/:id/status`
+- **Descrição**: Atualiza o status de uma doação existente
+- **Status Disponíveis**: `PENDING`, `APPROVED`, `COMPLETED`, `CANCELED`
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+### 3. Buscar Doação por ID
 
-## Stay in touch
+- **Funcionalidade**: Implementada no repositório para suporte aos casos de uso
+- **Validação**: Retorna erro `DonationNotFound` se não encontrada
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## 🚀 Configuração e Instalação
 
-## License
+### Pré-requisitos
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Node.js (v18+)
+- Docker e Docker Compose
+- MongoDB (via Docker)
+
+### Variáveis de Ambiente
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+PORT=3000
+MONGO_INITDB_ROOT_USERNAME=admin
+MONGO_INITDB_ROOT_PASSWORD=password123
+```
+
+### Instalação Local
+
+```bash
+# Clone o repositório
+git clone <repository-url>
+cd donation-service
+
+# Instale as dependências
+npm install
+
+# Execute em modo desenvolvimento
+npm run start:dev
+
+# Execute em modo debug
+npm run start:debug
+```
+
+### Instalação com Docker
+
+```bash
+# Execute com Docker Compose
+docker-compose up --build
+
+# Execute em background
+docker-compose up -d --build
+```
+
+## 📡 API Endpoints
+
+### Criar Doação
+
+```http
+POST /donations
+Content-Type: application/json
+
+{
+  "content": "Doação de sangue tipo O+",
+  "startDate": "2024-01-15T10:00:00Z",
+  "status": "PENDING",
+  "userId": "user123"
+}
+```
+
+**Resposta de Sucesso:**
+
+```json
+{
+  "isSuccess": true,
+  "value": {
+    "id": "65a1b2c3d4e5f6789012345",
+    "content": "Doação de sangue tipo O+",
+    "startDate": "2024-01-15T10:00:00Z",
+    "status": "PENDING",
+    "userId": "user123"
+  }
+}
+```
+
+### Atualizar Status
+
+```http
+PUT /donations/65a1b2c3d4e5f6789012345/status
+Content-Type: application/json
+
+{
+  "status": "APPROVED"
+}
+```
+
+**Resposta de Sucesso:**
+
+```json
+{
+  "isSuccess": true,
+  "value": {
+    "id": "65a1b2c3d4e5f6789012345",
+    "content": "Doação de sangue tipo O+",
+    "startDate": "2024-01-15T10:00:00Z",
+    "status": "APPROVED",
+    "userId": "user123"
+  }
+}
+```
+
+**Resposta de Erro:**
+
+```json
+{
+  "isSuccess": false,
+  "error": "DonationNotFound"
+}
+```
+
+## 🗄️ Modelo de Dados
+
+### Entidade Donation (MongoDB)
+
+```typescript
+{
+  _id: ObjectId,           // ID único do MongoDB
+  id: string,              // ID da aplicação
+  status: DonationStatus,  // Status da doação
+  content: string,         // Descrição da doação
+  startDate: Date,         // Data de início
+  finishDate?: Date,       // Data de finalização (opcional)
+  userId: string           // ID do usuário doador
+}
+```
+
+### Estados da Doação
+
+- **PENDING**: Doação criada, aguardando aprovação
+- **APPROVED**: Doação aprovada, pronta para execução
+- **COMPLETED**: Doação realizada com sucesso
+- **CANCELED**: Doação cancelada
+
+## 🎨 Padrões de Design
+
+### 1. Hexagonal Architecture
+
+- **Separação de responsabilidades** entre domínio, aplicação e infraestrutura
+- **Inversão de dependências** através de interfaces (ports)
+- **Testabilidade** facilitada pela arquitetura
+
+### 2. Repository Pattern
+
+- **Abstração** da camada de persistência
+- **Interface** `DonationRepositoryPort` define o contrato
+- **Implementação** `DonationRepository` para MongoDB
+
+### 3. Use Case Pattern
+
+- **Casos de uso** específicos para cada operação de negócio
+- **Single Responsibility Principle** aplicado
+- **Reutilização** através do `DonationService`
+
+### 4. Result Pattern
+
+```typescript
+// Sucesso
+Result<T> = { isSuccess: true, value: T };
+
+// Erro
+Result<T> = { isSuccess: false, error: ErrorsEnum };
+
+// Sucesso Parcial
+Result<T> = { isSuccess: true, value: T, isPartialSuccess: true };
+```
+
+### 5. Dependency Injection
+
+- **NestJS Container** para injeção de dependências
+- **Symbols** para identificação de providers
+- **Interface Segregation** através de ports
+
+## 🧪 Testes
+
+### Executar Testes
+
+```bash
+# Testes unitários
+npm run test
+
+# Testes com watch mode
+npm run test:watch
+
+# Testes com coverage
+npm run test:cov
+
+# Testes end-to-end
+npm run test:e2e
+```
+
+### Estrutura de Testes
+
+```
+test/
+├── app.e2e-spec.ts      # Testes end-to-end
+└── jest-e2e.json        # Configuração Jest E2E
+
+src/
+└── **/*.spec.ts          # Testes unitários
+```
+
+## 🐳 Docker
+
+### Desenvolvimento
+
+```bash
+# Build da imagem
+docker build -t donation-service:1.0.0 .
+
+# Executar container
+docker run -p 3000:3000 donation-service:1.0.0
+```
+
+### Docker Compose
+
+```yaml
+services:
+  donation-service:
+    build: .
+    ports:
+      - '3000:3000'
+      - '9229:9229' # Debug port
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - .:/app
+      - ./node_modules:/app/node_modules
+
+  mongo_donation_service:
+    image: mongo
+    ports:
+      - '27017:27017'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+```
+
+## 📋 Scripts Disponíveis
+
+```bash
+# Desenvolvimento
+npm run start:dev        # Execução com hot reload
+npm run start:debug      # Execução com debug
+
+# Build e Produção
+npm run build           # Build do projeto
+npm run start:prod      # Execução em produção
+
+# Qualidade de Código
+npm run lint            # ESLint
+npm run format          # Prettier
+
+# Testes
+npm run test           # Testes unitários
+npm run test:e2e       # Testes end-to-end
+npm run test:cov       # Coverage report
+```
+
+## 🔧 Configurações Adicionais
+
+### TypeScript
+
+- **Target**: ES2023
+- **Decorators**: Habilitados para NestJS
+- **Strict Mode**: Configurado para qualidade de código
+
+### ESLint
+
+- **Prettier Integration**: Formatação automática
+- **TypeScript Rules**: Regras específicas para TS
+- **NestJS Best Practices**: Configurações recomendadas
+
+### Jest
+
+- **Coverage**: Relatórios de cobertura
+- **TypeScript Support**: Através do ts-jest
+- **E2E Testing**: Configuração separada
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está licenciado sob a licença UNLICENSED - veja o arquivo [package.json](package.json) para detalhes.
+
+---
+
+**Projeto desenvolvido para o sistema Sangue Solidário - FATEC**
