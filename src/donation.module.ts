@@ -9,6 +9,7 @@ import { DONATION_REPOSITORY } from './constants';
 import { DonationRepository } from './adapters/out/donation.repository';
 import { CreateDonationUseCase } from './application/ports/in/createDonation.useCase';
 import { DonationService } from './application/core/service/donation.service';
+import { UpdateStatusUseCase } from './application/ports/in/updateStatus.useCase';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { DonationService } from './application/core/service/donation.service';
     { provide: DONATION_REPOSITORY, useClass: DonationRepository },
     CreateDonationUseCase,
     DonationService,
+    UpdateStatusUseCase,
   ],
 })
 export class AppModule {}

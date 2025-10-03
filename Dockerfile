@@ -16,4 +16,8 @@ EXPOSE 3000
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["npm", "build"]
+# Porta do NestJS (ex: 3000) + porta do debug (9229)
+EXPOSE 3000 9229
+
+# Start com o inspector
+CMD ["node", "--inspect=0.0.0.0:9229", "dist/main.js"]

@@ -10,6 +10,7 @@ export enum DonationStatus {
 export class Donation {
   id: string;
   status: DonationStatus;
+  content: string;
   startDate: DateType;
   finishDate?: DateType;
 }
