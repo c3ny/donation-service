@@ -1,0 +1,1 @@
+export const DONATION_REPOSITORY = Symbol('DONATION_REPOSITORY');

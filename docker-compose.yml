@@ -1,0 +1,33 @@
+services:
+  donation-service:
+    container_name: donation-service
+    image: donation-service:1.0.0
+    build:
+      context: .
+      target: development
+      dockerfile: ./Dockerfile
+    command: npm run start:dev
+    ports:
+      - 3000:3000
+      - 8080:8080
+    volumes:
+      - .:/app
+    restart: unless-stopped
+  mongo_donation_service:
+    container_name: mongo-donation-service
+    image: mongo
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
+
+configs:
+  httpd-config:
+    external: true
