@@ -7,10 +7,29 @@ export enum DonationStatus {
   CANCELED = 'CANCELED',
 }
 
+export enum BloodType {
+  A_POSITIVE = 'A+',
+  A_NEGATIVE = 'A-',
+  B_POSITIVE = 'B+',
+  B_NEGATIVE = 'B-',
+  AB_POSITIVE = 'AB+',
+  AB_NEGATIVE = 'AB-',
+  O_POSITIVE = 'O+',
+  O_NEGATIVE = 'O-',
+}
+
+export interface Location {
+  latitude: number;
+  longitude: number;
+}
+
 export class Donation {
   id: string;
   status: DonationStatus;
   content: string;
   startDate: DateType;
+  location: Location;
+  bloodType: BloodType;
   finishDate?: DateType;
+  userId: string;
 }

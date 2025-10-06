@@ -1,0 +1,472 @@
+---
+globs: *.ts,*.tsx
+---
+
+# Donation Service - TypeScript Coding Standards
+
+## TypeScript Best Practices
+
+### Type Safety
+
+1. **Always use explicit types** for function parameters and return values
+2. **Avoid `any` type** - use `unknown` if type is truly unknown
+3. **Use strict null checks** - explicitly handle `null` and `undefined`
+4. **Prefer interfaces** for public contracts (ports)
+5. **Use type aliases** for union types and complex types
+
+### Async/Await
+
+1. **Always use async/await** over raw Promises
+2. **Handle errors** appropriately in async functions
+3. **Return Promise types** explicitly in interface definitions
+
+Example:
+
+```typescript
+async execute(params: T): Promise<Result<R>> {
+  // Implementation
+}
+```
+
+## NestJS Conventions
+
+### Decorators
+
+1. **Use dependency injection** via constructor
+2. **Apply decorators** in this order:
+   - Class decorators (@Injectable, @Controller)
+   - Method decorators (@Post, @Get, @Put, @Delete)
+   - Parameter decorators (@Body, @Param, @Query)
+
+### Injectable Services
+
+All services, use cases, and repositories must be decorated with `@Injectable()`:
+
+```typescript
+@Injectable()
+export class CreateDonationUseCase implements UseCase<...> {
+  constructor(
+    @Inject(DONATION_REPOSITORY)
+    private readonly repository: DonationRepositoryPort,
+  ) {}
+}
+```
+
+### Dependency Injection Tokens
+
+1. Define constants in [constants/index.ts](mdc:src/constants/index.ts)
+2. Use `@Inject()` decorator for interface injection
+3. Format: `{ENTITY}_{RESOURCE_TYPE}` (e.g., `DONATION_REPOSITORY`)
+
+## Layer-Specific Guidelines
+
+### Domain Entities (`application/core/domain/`)
+
+**DO:**
+
+- Use plain TypeScript classes or interfaces
+- Define enums for fixed value sets
+- Keep entities focused and cohesive
+- Use value objects for complex types (e.g., `Location`)
+
+**DON'T:**
+
+- Import framework dependencies
+- Add persistence logic
+- Include validation decorators
+- Reference adapters
+
+Example:
+
+```typescript
+export enum DonationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  COMPLETED = 'COMPLETED',
+  CANCELED = 'CANCELED',
+}
+
+export interface Location {
+  latitude: number;
+  longitude: number;
+}
+
+export class Donation {
+  id: string;
+  status: DonationStatus;
+  content: string;
+  startDate: DateType;
+  location: Location;
+  finishDate?: DateType;
+}
+```
+
+### Use Cases (`application/ports/in/`)
+
+**DO:**
+
+- Implement `UseCase<T, R>` interface
+- Return `Result<T>` for consistent error handling
+- Focus on single responsibility
+- Inject only port interfaces (from `ports/out/`)
+- Use descriptive names: `{Action}{Entity}UseCase`
+
+**DON'T:**
+
+- Call other use cases directly
+- Import from adapters layer
+- Include HTTP or framework logic
+- Mutate input parameters
+
+Example:
+
+```typescript
+@Injectable()
+export class CreateDonationUseCase
+  implements UseCase<Donation, Promise<Result<Donation>>>
+{
+  constructor(
+    @Inject(DONATION_REPOSITORY)
+    private readonly donationRepository: DonationRepositoryPort,
+  ) {}
+
+  async execute(donation: Omit<Donation, 'id'>): Promise<Result<Donation>> {
+    const savedDonation = await this.donationRepository.save(donation);
+    return ResultFactory.success(savedDonation);
+  }
+}
+```
+
+### Services (`application/core/service/`)
+
+**DO:**
+
+- Act as a facade for use cases
+- Inject use cases via constructor
+- Delegate all logic to use cases
+- Return use case results directly
+
+**DON'T:**
+
+- Implement business logic
+- Access repositories directly
+- Transform data (do it in use cases or controllers)
+
+Example:
+
+```typescript
+@Injectable()
+export class DonationService {
+  constructor(
+    private readonly createDonationUseCase: CreateDonationUseCase,
+    private readonly updateStatusUseCase: UpdateStatusUseCase,
+  ) {}
+
+  async createDonation(
+    donation: Omit<Donation, 'id'>,
+  ): Promise<Result<Donation>> {
+    return this.createDonationUseCase.execute(donation);
+  }
+}
+```
+
+### Controllers (`adapters/in/`)
+
+**DO:**
+
+- Use REST conventions for HTTP methods
+- Use plural resource names (`/donations`)
+- Extract and validate request data
+- Return service/use case results
+- Handle HTTP-specific concerns (status codes, headers)
+
+**Error handling:**
+
+```typescript
+const result = await this.donationService.createDonation(donation);
+
+if (!result.isSuccess) {
+  switch (result.error) {
+    case ErrorsEnum.UserAlreadyExists:
+      throw new HttpException(result.error, HttpStatus.BAD_REQUEST);
+    case ErrorsEnum.UserNotFoundError:
+      throw new HttpException(result.error, HttpStatus.NOT_FOUND);
+    default:
+      throw new HttpException(result.error, HttpStatus.BAD_REQUEST);
+  }
+}
+```
+
+**DON'T:**
+
+- Implement business logic
+- Access repositories directly
+- Handle business errors (let Result pattern handle it)
+
+Example:
+
+```typescript
+@Controller('/donations')
+export class DonationController {
+  constructor(private readonly donationService: DonationService) {}
+
+  @Post()
+  async createDonation(@Body() donation: Omit<Donation, 'id'>) {
+    return this.donationService.createDonation(donation);
+  }
+
+  @Put(':id/status')
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() status: { status: DonationStatus },
+  ) {
+    return this.donationService.updateStatus(id, status.status);
+  }
+}
+```
+
+### Repository Ports (`application/ports/out/`)
+
+**DO:**
+
+- Define interfaces only
+- Use domain entities in method signatures
+- Use descriptive method names
+- Return domain entities or null
+
+**DON'T:**
+
+- Include implementations
+- Use framework types (Model, Document, etc.)
+- Include framework decorators
+
+Example:
+
+```typescript
+export interface DonationRepositoryPort {
+  save(donation: Omit<Donation, 'id'>): Promise<Donation>;
+  findById(id: string): Promise<Donation | null>;
+  update(donation: Donation): Promise<Donation | null>;
+  updateStatus(id: string, status: DonationStatus): Promise<Donation | null>;
+  delete(id: string): Promise<void>;
+}
+```
+
+### Repository Implementations (`adapters/out/`)
+
+**DO:**
+
+- Implement repository port interface
+- Use `@Injectable()` decorator
+- Handle framework-specific logic (Mongoose, TypeORM, etc.)
+- Map between domain entities and persistence models
+- Handle persistence errors appropriately
+
+**DON'T:**
+
+- Include business logic
+- Throw domain errors
+- Reference other repositories (use composition via ports)
+
+Example:
+
+```typescript
+@Injectable()
+export class DonationRepository implements DonationRepositoryPort {
+  constructor(
+    @InjectModel(Donation.name) private donationModel: Model<Donation>,
+  ) {}
+
+  async save(donation: Omit<Donation, 'id'>): Promise<Donation> {
+    const savedDonation = await this.donationModel.create(donation);
+    return savedDonation;
+  }
+
+  async findById(id: string): Promise<Donation | null> {
+    return this.donationModel.findById(id).exec();
+  }
+}
+```
+
+## Result Pattern Usage
+
+### When to Use
+
+1. **Use Result<T>** for all use case returns
+2. **Return success** for successful operations
+3. **Return failure** for business rule violations
+4. **Let exceptions bubble** for technical errors
+
+### Result Factory Methods
+
+```typescript
+// Success
+return ResultFactory.success(data);
+
+// Failure (business error)
+return ResultFactory.failure(ErrorsEnum.DONATION_NOT_FOUND);
+
+// Partial success (optional)
+return ResultFactory.partialSuccess(data);
+```
+
+### Checking Results
+
+```typescript
+const result = await useCase.execute(params);
+
+if (result.isSuccess) {
+  const data = result.value;
+  // Handle success
+} else {
+  const error = result.error;
+  // Handle business error
+}
+```
+
+## Error Handling
+
+### Business Errors
+
+1. Define in [errors.enum.ts](mdc:src/application/core/errors/errors.enum.ts)
+2. Use descriptive names: `{ENTITY}_{ERROR_TYPE}`
+3. Return via `ResultFactory.failure()`
+
+### Technical Errors
+
+1. Let NestJS exception filters handle them
+2. Don't catch unless you can recover
+3. Log appropriately
+
+## Import Organization
+
+Order imports by:
+
+1. External libraries (Node, npm packages)
+2. NestJS modules
+3. Application core (domain, services)
+4. Application ports
+5. Adapters
+6. Types and constants
+7. Relative imports
+
+Example:
+
+```typescript
+import { Injectable, Inject } from '@nestjs/common';
+import { DonationRepositoryPort } from 'src/application/ports/out/donation-repository.port';
+import { Donation } from 'src/application/core/domain/donation.entity';
+import { DONATION_REPOSITORY } from 'src/constants';
+import { UseCase } from 'src/types/useCase.types';
+import { Result, ResultFactory } from 'src/types/result.types';
+```
+
+## File Organization
+
+### Naming
+
+- Use kebab-case for file names: `donation.service.ts`
+- Match class name to file name: `DonationService` → `donation.service.ts`
+- Use descriptive suffixes: `.entity`, `.service`, `.controller`, `.repository`, `.port`
+
+### Structure
+
+- One main class/interface per file
+- Group related types in the same file
+- Export main construct as default or named export
+
+## Constructor Injection
+
+**DO:**
+
+```typescript
+constructor(
+  private readonly service: DonationService,
+  @Inject(TOKEN) private readonly repository: RepositoryPort,
+) {}
+```
+
+**DON'T:**
+
+```typescript
+// Don't use public unless needed
+constructor(public service: DonationService) {}
+
+// Don't omit readonly
+constructor(private service: DonationService) {}
+```
+
+## Readonly Properties
+
+- Use `readonly` for injected dependencies
+- Use `readonly` for properties that shouldn't change
+- Helps catch mutation bugs at compile time
+
+## Optional vs Required
+
+- Use `?` for truly optional properties
+- Use `| null` when absence has semantic meaning
+- Use `Partial<T>` for update operations
+- Use `Omit<T, 'field'>` for creation operations
+
+Example:
+
+```typescript
+// Optional: may or may not exist
+finishDate?: DateType;
+
+// Required but nullable: always present, value may be null
+completedBy: string | null;
+
+// Creation: ID not yet assigned
+save(donation: Omit<Donation, 'id'>): Promise<Donation>;
+```
+
+## Code Comments
+
+### When to Comment
+
+1. Complex business logic
+2. Non-obvious implementations
+3. Workarounds or hacks (with explanation)
+4. Public API documentation (JSDoc)
+
+### When NOT to Comment
+
+1. Self-explanatory code
+2. Restating code in English
+3. Commented-out code (delete it)
+
+## Testing Patterns
+
+### Unit Tests
+
+- Test use cases in isolation
+- Mock dependencies (repository ports)
+- Test success and failure paths
+- Test edge cases
+
+### Integration Tests
+
+- Test adapters with real dependencies
+- Use test database
+- Clean up after tests
+
+### E2E Tests
+
+- Test complete flows
+- Use real HTTP requests
+- Test realistic scenarios
+
+## Common Pitfalls to Avoid
+
+1. ❌ Importing concrete implementations instead of interfaces
+2. ❌ Putting business logic in controllers
+3. ❌ Directly accessing database models in use cases
+4. ❌ Circular dependencies between layers
+5. ❌ Forgetting `@Injectable()` decorator
+6. ❌ Not using the Result pattern
+7. ❌ Mixing domain entities with persistence entities
+8. ❌ Using `any` type
+9. ❌ Not handling null/undefined cases
+10. ❌ Breaking hexagonal architecture boundaries

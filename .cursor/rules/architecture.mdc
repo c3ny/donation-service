@@ -1,0 +1,297 @@
+---
+alwaysApply: true
+---
+
+# Donation Service - Hexagonal Architecture Overview
+
+## Architecture Pattern
+
+This microservice follows **Hexagonal Architecture** (Ports and Adapters), which promotes:
+
+- Clear separation of concerns
+- Business logic independence from frameworks and external dependencies
+- Testability and maintainability
+- Dependency inversion principle
+
+## Project Structure
+
+### Core Layers
+
+#### 1. Application Core (`src/application/core/`)
+
+The **innermost layer** containing pure business logic with NO external dependencies.
+
+**Domain Entities** (`src/application/core/domain/`)
+
+- Pure TypeScript classes/interfaces representing business concepts
+- Example: [donation.entity.ts](mdc:src/application/core/domain/donation.entity.ts)
+- Must NOT import from adapters, NestJS, or any framework
+- Should only use native TypeScript types and other domain entities
+
+**Services** (`src/application/core/service/`)
+
+- Orchestrates use cases
+- Example: [donation.service.ts](mdc:src/application/core/service/donation.service.ts)
+- Depends only on use case interfaces (ports/in)
+- Must NOT contain business logic (delegate to use cases)
+
+**Errors** (`src/application/core/errors/`)
+
+- Domain-specific error definitions
+- Example: [errors.enum.ts](mdc:src/application/core/errors/errors.enum.ts)
+
+#### 2. Application Ports (`src/application/ports/`)
+
+Define **interfaces** for communication between layers.
+
+**Input Ports** (`src/application/ports/in/`)
+
+- Define use case interfaces
+- Examples: [createDonation.useCase.ts](mdc:src/application/ports/in/createDonation.useCase.ts), [updateStatus.useCase.ts](mdc:src/application/ports/in/updateStatus.useCase.ts)
+- Implement the `UseCase<T, R>` interface from [useCase.types.ts](mdc:src/types/useCase.types.ts)
+- Return `Result<T>` type for consistent error handling
+- Can inject output ports (repositories) via dependency injection
+
+**Output Ports** (`src/application/ports/out/`)
+
+- Define repository/external service interfaces
+- Example: [donation-repostory.port.ts](mdc:src/application/ports/out/donation-repostory.port.ts)
+- Abstractions that adapters must implement
+- Use domain entities, NOT framework-specific types
+
+#### 3. Adapters (`src/adapters/`)
+
+Connect the application to the outside world.
+
+**Input Adapters** (`src/adapters/in/`)
+
+- HTTP controllers, event listeners, CLI handlers
+- Example: [donation.controller.ts](mdc:src/adapters/in/donation.controller.ts)
+- Use NestJS decorators (`@Controller`, `@Post`, etc.)
+- Translate HTTP requests to use case calls
+- Depend on services from `application/core/service/`
+
+**Output Adapters** (`src/adapters/out/`)
+
+- Repository implementations, external API clients
+- Example: [donation.repository.ts](mdc:src/adapters/out/donation.repository.ts)
+- Implement port interfaces from `application/ports/out/`
+- Handle framework-specific logic (Mongoose, HTTP clients, etc.)
+
+**Adapter Domain Models** (`src/adapters/out/domain/`)
+
+- Framework-specific entity mappings (e.g., Mongoose schemas)
+- Example: [donation.entity.ts](mdc:src/adapters/out/domain/donation.entity.ts)
+- Map between domain entities and persistence models
+
+### Shared Types (`src/types/`)
+
+- Common type definitions used across layers
+- [entity.types.ts](mdc:src/types/entity.types.ts) - Entity-related types
+- [result.types.ts](mdc:src/types/result.types.ts) - Result pattern for error handling
+- [useCase.types.ts](mdc:src/types/useCase.types.ts) - Use case interface
+
+### Constants (`src/constants/`)
+
+- Injection tokens and application constants
+- Example: `DONATION_REPOSITORY` token for DI
+
+## Dependency Rules
+
+### ✅ Allowed Dependencies
+
+```
+Adapters/In → Application/Core/Service → Application/Ports/In → Application/Ports/Out
+                                                                          ↑
+Adapters/Out ─────────────────────────────────────────────────────────────┘
+```
+
+1. **Controllers** (adapters/in) → Services (application/core/service)
+2. **Services** → Use Cases (application/ports/in)
+3. **Use Cases** → Repository Ports (application/ports/out)
+4. **Repositories** (adapters/out) → Repository Ports (implements interface)
+5. **Everyone** → Domain Entities (application/core/domain)
+6. **Everyone** → Shared Types (src/types)
+
+### ❌ Forbidden Dependencies
+
+1. **Domain entities** MUST NOT import from:
+   - NestJS (`@nestjs/*`)
+   - Mongoose or any ORM
+   - Adapters layer
+   - Any framework-specific code
+
+2. **Use Cases** (ports/in) MUST NOT import from:
+   - Adapters layer
+   - Services (circular dependency)
+   - Framework implementations
+
+3. **Repository Ports** (ports/out) MUST NOT import from:
+   - Adapters layer
+   - Concrete implementations
+
+4. **Application Core** MUST remain framework-agnostic
+
+## Design Patterns
+
+### 1. Result Pattern
+
+Use `Result<T>` type for consistent error handling:
+
+```typescript
+// From result.types.ts
+type Result<T> = SuccessResult<T> | PartialSuccessResult<T> | FailureResult;
+
+// Usage in use cases
+return ResultFactory.success(donation);
+return ResultFactory.failure(ErrorsEnum.NOT_FOUND);
+```
+
+### 2. Use Case Pattern
+
+Each business operation is a separate use case:
+
+```typescript
+@Injectable()
+export class CreateDonationUseCase
+  implements UseCase<Donation, Promise<Result<Donation>>>
+{
+  execute(donation: Omit<Donation, 'id'>): Promise<Result<Donation>> {
+    // Implementation
+  }
+}
+```
+
+### 3. Dependency Injection
+
+- Use NestJS DI container
+- Inject interfaces (ports), not implementations
+- Define tokens in [constants/index.ts](mdc:src/constants/index.ts)
+
+Example:
+
+```typescript
+{ provide: DONATION_REPOSITORY, useClass: DonationRepository }
+```
+
+### 4. Service Layer as Facade
+
+Services coordinate use cases but don't contain business logic:
+
+```typescript
+@Injectable()
+export class DonationService {
+  constructor(
+    private readonly createDonationUseCase: CreateDonationUseCase,
+    private readonly updateStatusUseCase: UpdateStatusUseCase,
+  ) {}
+
+  async createDonation(
+    donation: Omit<Donation, 'id'>,
+  ): Promise<Result<Donation>> {
+    return this.createDonationUseCase.execute(donation);
+  }
+}
+```
+
+## Module Organization
+
+All dependencies are wired in [donation.module.ts](mdc:src/donation.module.ts):
+
+1. **Imports**: External modules (MongooseModule)
+2. **Controllers**: Input adapters
+3. **Providers**: Services, use cases, and repository implementations
+
+## Naming Conventions
+
+1. **Use Cases**: `{Action}{Entity}UseCase` (e.g., `CreateDonationUseCase`)
+2. **Services**: `{Entity}Service` (e.g., `DonationService`)
+3. **Controllers**: `{Entity}Controller` (e.g., `DonationController`)
+4. **Repositories**: `{Entity}Repository` (e.g., `DonationRepository`)
+5. **Repository Ports**: `{Entity}RepositoryPort` (e.g., `DonationRepositoryPort`)
+6. **Domain Entities**: `{Entity}` (e.g., `Donation`)
+7. **Tokens**: `{ENTITY}_{TYPE}` (e.g., `DONATION_REPOSITORY`)
+
+## Best Practices
+
+### When Adding New Features
+
+1. **Start with Domain**: Define entities in `application/core/domain/`
+2. **Define Ports**: Create interfaces in `application/ports/`
+3. **Implement Use Case**: Add logic in `application/ports/in/`
+4. **Create Adapters**: Implement controllers and repositories in `adapters/`
+5. **Wire Dependencies**: Update [donation.module.ts](mdc:src/donation.module.ts)
+
+### Testing Strategy
+
+1. **Unit Tests**: Test use cases in isolation (mock ports)
+2. **Integration Tests**: Test adapters with real dependencies
+3. **E2E Tests**: Test complete flows through controllers
+
+### Error Handling
+
+1. Use `Result<T>` pattern for business errors
+2. Let framework exceptions bubble up for technical errors
+3. Define domain errors in [errors.enum.ts](mdc:src/application/core/errors/errors.enum.ts)
+
+### Code Organization
+
+1. One use case per file
+2. Keep use cases focused (Single Responsibility Principle)
+3. Services should only orchestrate, not implement logic
+4. Controllers should be thin (just HTTP concerns)
+
+## Business Domain
+
+### Blood Donation Model
+
+The service manages blood donation requests with:
+
+- **C2C**: User-to-user donation requests
+- **B2C**: Hospital/blood center to donor requests
+- **Location-based**: Track donation locations (latitude/longitude)
+- **Status tracking**: PENDING → APPROVED → COMPLETED or CANCELED
+- **Time-bound**: Start and optional finish dates
+
+### Core Entities
+
+**Donation** ([donation.entity.ts](mdc:src/application/core/domain/donation.entity.ts))
+
+- `id`: Unique identifier
+- `status`: Current donation status
+- `content`: Request description
+- `startDate`: When donation is needed
+- `finishDate`: Optional completion date
+- `bloodType`: Blood type related to the donation
+- `location`: Geographic coordinates
+
+**DonationStatus** Enum:
+
+- `PENDING`: Initial state
+- `APPROVED`: Request approved
+- `COMPLETED`: Donation fulfilled
+- `CANCELED`: Request cancelled
+
+## Technology Stack
+
+- **Framework**: NestJS 11.x
+- **Database**: MongoDB with Mongoose ODM
+- **Language**: TypeScript 5.7.x
+- **Runtime**: Node.js
+- **Testing**: Jest
+
+## Entry Points
+
+- **Main Application**: [main.ts](mdc:src/main.ts)
+- **Root Module**: [donation.module.ts](mdc:src/donation.module.ts)
+- **HTTP Port**: Configurable via `process.env.PORT` (default: 3000)
+
+## Environment Configuration
+
+Required environment variables:
+
+- `MONGO_INITDB_ROOT_USERNAME`: MongoDB username
+- `MONGO_INITDB_ROOT_PASSWORD`: MongoDB password
+- `PORT`: Application port (optional, defaults to 3000)
+
+Configuration loaded via `dotenv/config` in [main.ts](mdc:src/main.ts)

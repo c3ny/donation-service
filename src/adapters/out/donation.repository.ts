@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Donation } from './domain/donation.entity';
 import { Model } from 'mongoose';
 import { DonationRepositoryPort } from 'src/application/ports/out/donation-repostory.port';
-import { DonationStatus } from 'src/application/core/domain/donation.entity';
+import {
+  BloodType,
+  DonationStatus,
+} from 'src/application/core/domain/donation.entity';
 
 @Injectable()
 export class DonationRepository implements DonationRepositoryPort {
@@ -19,6 +22,14 @@ export class DonationRepository implements DonationRepositoryPort {
 
   async findById(id: string): Promise<Donation | null> {
     return this.donationModel.findById(id).exec();
+  }
+
+  async findAll(): Promise<Donation[]> {
+    return this.donationModel.find().exec();
+  }
+
+  async findByBloodType(bloodType: BloodType): Promise<Donation[]> {
+    return this.donationModel.find({ bloodType }).exec();
   }
 
   async updateStatus(
@@ -44,6 +55,7 @@ export class DonationRepository implements DonationRepositoryPort {
           status: donation.status,
           content: donation.content,
           userId: donation.userId,
+          location: donation.location,
         },
         { new: true },
       )
@@ -54,5 +66,10 @@ export class DonationRepository implements DonationRepositoryPort {
 
   async delete(id: string): Promise<void> {
     await this.donationModel.findByIdAndDelete(id).exec();
+  }
+
+  async deleteByUserId(userId: string): Promise<number> {
+    const result = await this.donationModel.deleteMany({ userId }).exec();
+    return result.deletedCount || 0;
   }
 }

@@ -1,14 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { CreateDonationUseCase } from '../../ports/in/createDonation.useCase';
-import { Donation, DonationStatus } from '../../core/domain/donation.entity';
+import {
+  BloodType,
+  Donation,
+  DonationStatus,
+} from '../../core/domain/donation.entity';
 import { Result } from '../../../types/result.types';
 import { UpdateStatusUseCase } from 'src/application/ports/in/updateStatus.useCase';
+import { FindDonationsByBloodTypeUseCase } from 'src/application/ports/in/findDonationsByBloodType.useCase';
+import { FindAllDonationsUseCase } from 'src/application/ports/in/findAllDonations.useCase';
+import { DeleteDonationUseCase } from 'src/application/ports/in/deleteDonation.useCase';
+import {
+  DeleteDonationsByUserIdUseCase,
+  DeleteDonationsByUserIdResult,
+} from 'src/application/ports/in/deleteDonationsByUserId.useCase';
 
 @Injectable()
 export class DonationService {
   constructor(
     private readonly createDonationUseCase: CreateDonationUseCase,
     private readonly updateStatusUseCase: UpdateStatusUseCase,
+    private readonly findDonationsByBloodTypeUseCase: FindDonationsByBloodTypeUseCase,
+    private readonly findAllDonationsUseCase: FindAllDonationsUseCase,
+    private readonly deleteDonationUseCase: DeleteDonationUseCase,
+    private readonly deleteDonationsByUserIdUseCase: DeleteDonationsByUserIdUseCase,
   ) {}
 
   async createDonation(
@@ -22,5 +37,25 @@ export class DonationService {
     status: DonationStatus,
   ): Promise<Result<Donation>> {
     return this.updateStatusUseCase.execute({ id, status });
+  }
+
+  async findDonationsByBloodType(
+    bloodType: BloodType,
+  ): Promise<Result<Donation[]>> {
+    return this.findDonationsByBloodTypeUseCase.execute(bloodType);
+  }
+
+  async findAllDonations(): Promise<Result<Donation[]>> {
+    return this.findAllDonationsUseCase.execute();
+  }
+
+  async deleteDonation(id: string): Promise<Result<void>> {
+    return this.deleteDonationUseCase.execute(id);
+  }
+
+  async deleteDonationsByUserId(
+    userId: string,
+  ): Promise<Result<DeleteDonationsByUserIdResult>> {
+    return this.deleteDonationsByUserIdUseCase.execute(userId);
   }
 }

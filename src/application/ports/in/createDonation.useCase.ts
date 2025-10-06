@@ -4,6 +4,11 @@ import { DONATION_REPOSITORY } from 'src/constants';
 import { UseCase } from 'src/types/useCase.types';
 import { Result, ResultFactory } from '../../../types/result.types';
 import { DonationRepositoryPort } from 'src/application/ports/out/donation-repostory.port';
+import {
+  sanitizeContent,
+  isValidContent,
+} from 'src/application/core/utils/sanitize.util';
+import { ErrorsEnum } from 'src/application/core/errors/errors.enum';
 
 @Injectable()
 export class CreateDonationUseCase
@@ -15,7 +20,18 @@ export class CreateDonationUseCase
   ) {}
 
   async execute(donation: Omit<Donation, 'id'>): Promise<Result<Donation>> {
-    const savedDonation = await this.donationRepository.save(donation);
+    // Validate content is not empty
+    if (!isValidContent(donation.content)) {
+      return ResultFactory.failure(ErrorsEnum.InvalidContent);
+    }
+
+    // Sanitize content to prevent XSS attacks
+    const sanitizedDonation = {
+      ...donation,
+      content: sanitizeContent(donation.content),
+    };
+
+    const savedDonation = await this.donationRepository.save(sanitizedDonation);
 
     return ResultFactory.success(savedDonation);
   }

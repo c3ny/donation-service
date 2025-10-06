@@ -10,6 +10,10 @@ import { DonationRepository } from './adapters/out/donation.repository';
 import { CreateDonationUseCase } from './application/ports/in/createDonation.useCase';
 import { DonationService } from './application/core/service/donation.service';
 import { UpdateStatusUseCase } from './application/ports/in/updateStatus.useCase';
+import { FindDonationsByBloodTypeUseCase } from './application/ports/in/findDonationsByBloodType.useCase';
+import { FindAllDonationsUseCase } from './application/ports/in/findAllDonations.useCase';
+import { DeleteDonationUseCase } from './application/ports/in/deleteDonation.useCase';
+import { DeleteDonationsByUserIdUseCase } from './application/ports/in/deleteDonationsByUserId.useCase';
 
 @Module({
   imports: [
@@ -29,6 +33,10 @@ import { UpdateStatusUseCase } from './application/ports/in/updateStatus.useCase
     CreateDonationUseCase,
     DonationService,
     UpdateStatusUseCase,
+    FindDonationsByBloodTypeUseCase,
+    FindAllDonationsUseCase,
+    DeleteDonationUseCase,
+    DeleteDonationsByUserIdUseCase,
   ],
 })
 export class AppModule {}

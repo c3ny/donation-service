@@ -1,0 +1,10 @@
+---
+description: Business Overview
+globs:
+alwaysApply: true
+---
+
+- The donation-service is a microservice that belongs to the Sangue Solidario's project.
+- He deals with everything about blood donation and all the requests of blood made by users or hospitals.
+- The application must handle blood donation requests for all blood types, listing the location of the person in need of blood, the hospital that should receive the donation, and also requests from blood centers or hospitals for specific blood types.
+- The application essentially follows a C2C / B2C model, focusing both on user-to-user interactions and business-to-user relationships (such as hospitals or blood centers connecting with donors).

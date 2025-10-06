@@ -1,0 +1,556 @@
+---
+description: Development workflow, common tasks, and adding new features to the donation service
+---
+
+# Donation Service - Development Workflow
+
+## Adding a New Feature
+
+Follow these steps to add new functionality while maintaining hexagonal architecture:
+
+### 1. Define Domain Entity (if needed)
+
+**Location**: `src/application/core/domain/`
+
+If your feature requires a new entity or modifying existing ones:
+
+```typescript
+// src/application/core/domain/blood-type.entity.ts
+export enum BloodType {
+  A_POSITIVE = 'A+',
+  A_NEGATIVE = 'A-',
+  B_POSITIVE = 'B+',
+  B_NEGATIVE = 'B-',
+  O_POSITIVE = 'O+',
+  O_NEGATIVE = 'O-',
+  AB_POSITIVE = 'AB+',
+  AB_NEGATIVE = 'AB-',
+}
+```
+
+Remember: Domain entities must be framework-agnostic!
+
+### 2. Define Repository Port (if needed)
+
+**Location**: `src/application/ports/out/`
+
+Create or update the repository interface:
+
+```typescript
+// src/application/ports/out/donation-repository.port.ts
+export interface DonationRepositoryPort {
+  // Existing methods...
+
+  // New method
+  findByBloodType(bloodType: BloodType): Promise<Donation[]>;
+}
+```
+
+### 3. Create Use Case
+
+**Location**: `src/application/ports/in/`
+
+Implement the business logic:
+
+```typescript
+// src/application/ports/in/findDonationsByBloodType.useCase.ts
+import { Injectable, Inject } from '@nestjs/common';
+import { UseCase } from 'src/types/useCase.types';
+import { Result, ResultFactory } from 'src/types/result.types';
+import {
+  Donation,
+  BloodType,
+} from 'src/application/core/domain/donation.entity';
+import { DonationRepositoryPort } from '../out/donation-repository.port';
+import { DONATION_REPOSITORY } from 'src/constants';
+
+interface FindByBloodTypeParams {
+  bloodType: BloodType;
+}
+
+@Injectable()
+export class FindDonationsByBloodTypeUseCase
+  implements UseCase<FindByBloodTypeParams, Promise<Result<Donation[]>>>
+{
+  constructor(
+    @Inject(DONATION_REPOSITORY)
+    private readonly donationRepository: DonationRepositoryPort,
+  ) {}
+
+  async execute(params: FindByBloodTypeParams): Promise<Result<Donation[]>> {
+    const donations = await this.donationRepository.findByBloodType(
+      params.bloodType,
+    );
+
+    return ResultFactory.success(donations);
+  }
+}
+```
+
+### 4. Update Service
+
+**Location**: `src/application/core/service/`
+
+Add the new use case to the service:
+
+```typescript
+// src/application/core/service/donation.service.ts
+@Injectable()
+export class DonationService {
+  constructor(
+    private readonly createDonationUseCase: CreateDonationUseCase,
+    private readonly updateStatusUseCase: UpdateStatusUseCase,
+    private readonly findDonationsByBloodTypeUseCase: FindDonationsByBloodTypeUseCase, // New
+  ) {}
+
+  // Existing methods...
+
+  async findByBloodType(bloodType: BloodType): Promise<Result<Donation[]>> {
+    return this.findDonationsByBloodTypeUseCase.execute({ bloodType });
+  }
+}
+```
+
+### 5. Implement Repository
+
+**Location**: `src/adapters/out/`
+
+Implement the port interface:
+
+```typescript
+// src/adapters/out/donation.repository.ts
+@Injectable()
+export class DonationRepository implements DonationRepositoryPort {
+  constructor(
+    @InjectModel(Donation.name) private donationModel: Model<Donation>,
+  ) {}
+
+  // Existing methods...
+
+  async findByBloodType(bloodType: BloodType): Promise<Donation[]> {
+    return this.donationModel.find({ bloodType }).exec();
+  }
+}
+```
+
+### 6. Add Controller Endpoint
+
+**Location**: `src/adapters/in/`
+
+Expose via HTTP:
+
+```typescript
+// src/adapters/in/donation.controller.ts
+@Controller('/donations')
+export class DonationController {
+  constructor(private readonly donationService: DonationService) {}
+
+  // Existing endpoints...
+
+  @Get('blood-type/:type')
+  async findByBloodType(@Param('type') bloodType: BloodType) {
+    return this.donationService.findByBloodType(bloodType);
+  }
+}
+```
+
+### 7. Update Module
+
+**Location**: `src/donation.module.ts`
+
+Register the new use case:
+
+```typescript
+@Module({
+  imports: [
+    /* ... */
+  ],
+  controllers: [DonationController],
+  providers: [
+    { provide: DONATION_REPOSITORY, useClass: DonationRepository },
+    CreateDonationUseCase,
+    UpdateStatusUseCase,
+    FindDonationsByBloodTypeUseCase, // Add this
+    DonationService,
+  ],
+})
+export class AppModule {}
+```
+
+### 8. Write Tests
+
+Create tests for each layer:
+
+```typescript
+// src/application/ports/in/__tests__/findDonationsByBloodType.useCase.spec.ts
+describe('FindDonationsByBloodTypeUseCase', () => {
+  let useCase: FindDonationsByBloodTypeUseCase;
+  let mockRepository: DonationRepositoryPort;
+
+  beforeEach(() => {
+    mockRepository = {
+      findByBloodType: jest.fn(),
+    } as any;
+
+    useCase = new FindDonationsByBloodTypeUseCase(mockRepository);
+  });
+
+  it('should return donations for given blood type', async () => {
+    const donations = [{ id: '1', bloodType: BloodType.O_POSITIVE }];
+    jest.spyOn(mockRepository, 'findByBloodType').mockResolvedValue(donations);
+
+    const result = await useCase.execute({ bloodType: BloodType.O_POSITIVE });
+
+    expect(result.isSuccess).toBe(true);
+    expect(result.value).toEqual(donations);
+  });
+});
+```
+
+## Common Development Tasks
+
+### Running the Application
+
+```bash
+# Development mode (with hot reload)
+npm run start:dev
+
+# Debug mode
+npm run start:debug
+
+# Production mode
+npm run start:prod
+```
+
+### Running with Docker
+
+```bash
+# Start all services
+docker-compose up
+
+# Start in detached mode
+docker-compose up -d
+
+# View logs
+docker-compose logs -f donation-service
+
+# Stop services
+docker-compose down
+```
+
+### Database Operations
+
+```bash
+# Connect to MongoDB
+docker exec -it <mongo-container-name> mongosh -u <username> -p <password>
+
+# Use donation database
+use donation
+
+# Show collections
+show collections
+
+# Query donations
+db.donations.find().pretty()
+```
+
+### Testing
+
+```bash
+# Run all tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# Coverage
+npm run test:cov
+
+# E2E tests
+npm run test:e2e
+```
+
+### Linting and Formatting
+
+```bash
+# Run linter
+npm run lint
+
+# Format code
+npm run format
+
+# Build
+npm run build
+```
+
+## Code Review Checklist
+
+Before submitting changes, verify:
+
+- [ ] Domain entities have no framework dependencies
+- [ ] Use cases return `Result<T>` type
+- [ ] Controllers only handle HTTP concerns
+- [ ] Repository ports define interfaces, not implementations
+- [ ] New providers added to module
+- [ ] All dependencies injected via constructor
+- [ ] `@Injectable()` decorator applied to services
+- [ ] Proper error handling (Result pattern for business, exceptions for technical)
+- [ ] Tests written for new functionality
+- [ ] Code formatted (`npm run format`)
+- [ ] No linter errors (`npm run lint`)
+- [ ] Imports organized correctly
+- [ ] No circular dependencies
+- [ ] Documentation updated if needed
+
+## Debugging
+
+### Using NestJS Logger
+
+```typescript
+import { Logger } from '@nestjs/common';
+
+@Injectable()
+export class DonationService {
+  private readonly logger = new Logger(DonationService.name);
+
+  async createDonation(
+    donation: Omit<Donation, 'id'>,
+  ): Promise<Result<Donation>> {
+    this.logger.debug('Creating donation', { donation });
+    const result = await this.createDonationUseCase.execute(donation);
+    this.logger.debug('Donation created', { result });
+    return result;
+  }
+}
+```
+
+### Debug Mode with VSCode
+
+Add to `.vscode/launch.json`:
+
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to NestJS",
+      "port": 9229,
+      "restart": true,
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    }
+  ]
+}
+```
+
+Then run:
+
+```bash
+npm run start:debug
+```
+
+## Environment Variables
+
+### Development (.env)
+
+```env
+PORT=3001
+MONGO_INITDB_ROOT_USERNAME=admin
+MONGO_INITDB_ROOT_PASSWORD=password
+NODE_ENV=development
+```
+
+### Production
+
+Ensure these are set in your deployment environment:
+
+- `PORT`
+- `MONGO_INITDB_ROOT_USERNAME`
+- `MONGO_INITDB_ROOT_PASSWORD`
+- `NODE_ENV=production`
+
+## Microservice Communication
+
+Since this is part of the Sangue Solidario project with multiple microservices:
+
+### Publishing Events (when needed)
+
+1. Create event types in domain
+2. Use message broker (RabbitMQ, Kafka, etc.)
+3. Keep events in `src/application/core/events/`
+4. Publish from use cases after successful operations
+
+### Consuming Events
+
+1. Create event handlers in `src/adapters/in/events/`
+2. Map events to use case calls
+3. Handle idempotency
+
+## Monitoring and Health Checks
+
+### Health Check Endpoint
+
+Add NestJS Terminus for health checks:
+
+```bash
+npm install @nestjs/terminus
+```
+
+```typescript
+// src/adapters/in/health.controller.ts
+import { Controller, Get } from '@nestjs/common';
+import {
+  HealthCheck,
+  HealthCheckService,
+  MongooseHealthIndicator,
+} from '@nestjs/terminus';
+
+@Controller('health')
+export class HealthController {
+  constructor(
+    private health: HealthCheckService,
+    private db: MongooseHealthIndicator,
+  ) {}
+
+  @Get()
+  @HealthCheck()
+  check() {
+    return this.health.check([() => this.db.pingCheck('database')]);
+  }
+}
+```
+
+## Performance Tips
+
+1. **Use indexes** on frequently queried fields
+2. **Limit query results** with pagination
+3. **Use projection** to fetch only needed fields
+4. **Cache frequent queries** (Redis, etc.)
+5. **Monitor slow queries** in MongoDB
+6. **Use connection pooling** (already configured in Mongoose)
+
+## Common Issues and Solutions
+
+### Issue: "Cannot inject repository"
+
+**Solution**: Ensure provider is registered in module with correct token:
+
+```typescript
+{ provide: DONATION_REPOSITORY, useClass: DonationRepository }
+```
+
+### Issue: "Circular dependency"
+
+**Solution**:
+
+- Services should not inject use cases that depend on them
+- Use forwardRef() if unavoidable (but reconsider design)
+
+### Issue: "Domain entity has framework dependency"
+
+**Solution**:
+
+- Keep domain entities pure
+- Create separate adapter entities for Mongoose/TypeORM
+- Map between domain and adapter entities in repositories
+
+### Issue: "Tests fail with DI errors"
+
+**Solution**:
+
+- Provide all dependencies in test module
+- Use mocks for external dependencies
+- Import required NestJS testing utilities
+
+## API Documentation
+
+Consider adding Swagger/OpenAPI:
+
+```bash
+npm install @nestjs/swagger swagger-ui-express
+```
+
+```typescript
+// src/main.ts
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  const config = new DocumentBuilder()
+    .setTitle('Donation Service')
+    .setDescription('Blood donation management API')
+    .setVersion('1.0')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api-docs', app, document);
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+```
+
+## Git Workflow
+
+### Branch Naming
+
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `refactor/` - Code refactoring
+- `docs/` - Documentation
+
+Example: `feature/add-blood-type-filter`
+
+### Commit Messages
+
+Follow conventional commits:
+
+- `feat: add blood type filtering`
+- `fix: correct donation status update`
+- `refactor: simplify use case structure`
+- `docs: update API documentation`
+- `test: add unit tests for use cases`
+
+## Migration Strategy
+
+When changing domain entities:
+
+1. **Add new field** (non-breaking)
+   - Add to domain entity as optional
+   - Update use cases to handle both old and new
+   - Migrate data
+   - Make required if needed
+
+2. **Remove field** (breaking)
+   - Deprecate first
+   - Update all use cases
+   - Migrate data
+   - Remove from entity
+
+3. **Rename field** (breaking)
+   - Add new field
+   - Dual-write period
+   - Migrate data
+   - Remove old field
+
+## Resources
+
+### NestJS Documentation
+
+https://docs.nestjs.com
+
+### Hexagonal Architecture
+
+- Ports and Adapters pattern
+- Clean Architecture principles
+- Domain-Driven Design (DDD)
+
+### MongoDB & Mongoose
+
+https://mongoosejs.com/docs/
+
+### TypeScript Best Practices
+
+https://www.typescriptlang.org/docs/

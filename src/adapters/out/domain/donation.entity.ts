@@ -1,5 +1,9 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { DonationStatus } from 'src/application/core/domain/donation.entity';
+import { Prop, raw, Schema, SchemaFactory } from '@nestjs/mongoose';
+import {
+  BloodType,
+  DonationStatus,
+  Location,
+} from 'src/application/core/domain/donation.entity';
 import { Donation as DonationDomain } from 'src/application/core/domain/donation.entity';
 @Schema()
 export class Donation implements DonationDomain {
@@ -14,6 +18,17 @@ export class Donation implements DonationDomain {
 
   @Prop()
   startDate: Date;
+
+  @Prop(
+    raw({
+      latitude: { type: Number },
+      longitude: { type: Number },
+    }),
+  )
+  location: Location;
+
+  @Prop()
+  bloodType: BloodType;
 
   @Prop()
   finishDate: Date;
