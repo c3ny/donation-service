@@ -14,24 +14,24 @@ export type SuccessResult<T> = {
   isPartialSuccess?: false;
 };
 
-export type FailureResult = {
+export type FailureResult<E = ErrorsEnum> = {
   isSuccess: false;
   value?: undefined;
-  error: ErrorsEnum;
+  error: E;
   isPartialSuccess?: false;
 };
 
-export type Result<T> =
+export type Result<T, E = ErrorsEnum> =
   | SuccessResult<T>
   | PartialSuccessResult<T>
-  | FailureResult;
+  | FailureResult<E>;
 
 export class ResultFactory {
   static success<T>(value: T): Result<T> {
     return { isSuccess: true, value };
   }
 
-  static failure<T>(error: ErrorsEnum): Result<T> {
+  static failure<T, E = ErrorsEnum>(error: E): Result<T, E> {
     return { isSuccess: false, error };
   }
 

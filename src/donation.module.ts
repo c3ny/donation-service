@@ -14,6 +14,7 @@ import { FindDonationsByBloodTypeUseCase } from './application/ports/in/findDona
 import { FindAllDonationsUseCase } from './application/ports/in/findAllDonations.useCase';
 import { DeleteDonationUseCase } from './application/ports/in/deleteDonation.useCase';
 import { DeleteDonationsByUserIdUseCase } from './application/ports/in/deleteDonationsByUserId.useCase';
+import { RegisterModule } from './modules/Register/register.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { DeleteDonationsByUserIdUseCase } from './application/ports/in/deleteDon
     MongooseModule.forFeature([
       { name: Donation.name, schema: DonationSchema },
     ]),
+    RegisterModule,
   ],
   controllers: [DonationController],
   providers: [
