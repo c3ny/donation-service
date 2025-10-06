@@ -23,6 +23,8 @@ export class UpdateRegistrationStatusUseCase
       Promise<Result<Registration, RegistrationErrorsEnum>>
     >
 {
+  private resultFactory = new RegistrationResultFactory<Registration>();
+
   constructor(
     @Inject(REGISTRATION_REPOSITORY)
     private readonly registrationRepository: RegistrationRepositoryPort,
@@ -34,7 +36,7 @@ export class UpdateRegistrationStatusUseCase
     const registration = await this.registrationRepository.findById(input.id);
 
     if (!registration) {
-      return RegistrationResultFactory.failure(
+      return this.resultFactory.failure(
         RegistrationErrorsEnum.RegistrationNotFound,
       );
     }
@@ -45,11 +47,11 @@ export class UpdateRegistrationStatusUseCase
     );
 
     if (!updatedRegistration) {
-      return RegistrationResultFactory.failure(
+      return this.resultFactory.failure(
         RegistrationErrorsEnum.RegistrationNotFound,
       );
     }
 
-    return RegistrationResultFactory.success(updatedRegistration);
+    return this.resultFactory.success(updatedRegistration);
   }
 }

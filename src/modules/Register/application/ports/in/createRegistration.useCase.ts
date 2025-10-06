@@ -24,6 +24,8 @@ export class CreateRegistrationUseCase
       Promise<Result<Registration, RegistrationErrorsEnum>>
     >
 {
+  private resultFactory = new RegistrationResultFactory<Registration>();
+
   constructor(
     @Inject(REGISTRATION_REPOSITORY)
     private readonly registrationRepository: RegistrationRepositoryPort,
@@ -40,7 +42,7 @@ export class CreateRegistrationUseCase
       );
 
     if (existingRegistration) {
-      return RegistrationResultFactory.failure(
+      return this.resultFactory.failure(
         RegistrationErrorsEnum.UserAlreadyRegistered,
       );
     }
@@ -56,6 +58,6 @@ export class CreateRegistrationUseCase
     const savedRegistration =
       await this.registrationRepository.save(registration);
 
-    return RegistrationResultFactory.success(savedRegistration);
+    return this.resultFactory.success(savedRegistration);
   }
 }

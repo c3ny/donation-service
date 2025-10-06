@@ -12,6 +12,8 @@ export class FindRegistrationsByDonationUseCase
   implements
     UseCase<string, Promise<Result<Registration[], RegistrationErrorsEnum>>>
 {
+  private resultFactory = new RegistrationResultFactory<Registration[]>();
+
   constructor(
     @Inject(REGISTRATION_REPOSITORY)
     private readonly registrationRepository: RegistrationRepositoryPort,
@@ -23,6 +25,6 @@ export class FindRegistrationsByDonationUseCase
     const registrations =
       await this.registrationRepository.findByDonationId(donationId);
 
-    return RegistrationResultFactory.success(registrations);
+    return this.resultFactory.success(registrations);
   }
 }

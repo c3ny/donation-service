@@ -9,6 +9,8 @@ import { DONATION_REPOSITORY } from 'src/constants';
 export class FindAllDonationsUseCase
   implements UseCase<void, Promise<Result<Donation[]>>>
 {
+  private resultFactory = new ResultFactory<Donation[]>();
+
   constructor(
     @Inject(DONATION_REPOSITORY)
     private readonly donationRepository: DonationRepositoryPort,
@@ -16,6 +18,6 @@ export class FindAllDonationsUseCase
 
   async execute(): Promise<Result<Donation[]>> {
     const donations = await this.donationRepository.findAll();
-    return ResultFactory.success(donations);
+    return this.resultFactory.success(donations);
   }
 }

@@ -9,6 +9,8 @@ import { ErrorsEnum } from 'src/application/core/errors/errors.enum';
 export class DeleteDonationUseCase
   implements UseCase<string, Promise<Result<void>>>
 {
+  private resultFactory = new ResultFactory<void, ErrorsEnum>();
+
   constructor(
     @Inject(DONATION_REPOSITORY)
     private readonly donationRepository: DonationRepositoryPort,
@@ -18,11 +20,11 @@ export class DeleteDonationUseCase
     const donation = await this.donationRepository.findById(id);
 
     if (!donation) {
-      return ResultFactory.failure(ErrorsEnum.DonationNotFound);
+      return this.resultFactory.failure(ErrorsEnum.DonationNotFound);
     }
 
     await this.donationRepository.delete(id);
 
-    return ResultFactory.success(undefined);
+    return this.resultFactory.success(undefined);
   }
 }

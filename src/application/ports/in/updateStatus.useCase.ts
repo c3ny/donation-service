@@ -18,6 +18,8 @@ export type UpdateStatusOutputType = {
 export class UpdateStatusUseCase
   implements UseCase<UpdateStatusOutputType, Promise<Result<Donation>>>
 {
+  private resultFactory = new ResultFactory<Donation, ErrorsEnum>();
+
   constructor(
     @Inject(DONATION_REPOSITORY) private repository: DonationRepositoryPort,
   ) {}
@@ -26,7 +28,7 @@ export class UpdateStatusUseCase
     const donation = await this.repository.findById(input.id);
 
     if (!donation) {
-      return ResultFactory.failure(ErrorsEnum.DonationNotFound);
+      return this.resultFactory.failure(ErrorsEnum.DonationNotFound);
     }
 
     const updatedDonation = await this.repository.updateStatus(
@@ -35,9 +37,9 @@ export class UpdateStatusUseCase
     );
 
     if (!updatedDonation) {
-      return ResultFactory.failure(ErrorsEnum.DonationNotFound);
+      return this.resultFactory.failure(ErrorsEnum.DonationNotFound);
     }
 
-    return ResultFactory.success(updatedDonation);
+    return this.resultFactory.success(updatedDonation);
   }
 }

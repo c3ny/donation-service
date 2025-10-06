@@ -12,6 +12,8 @@ export interface DeleteDonationsByUserIdResult {
 export class DeleteDonationsByUserIdUseCase
   implements UseCase<string, Promise<Result<DeleteDonationsByUserIdResult>>>
 {
+  private resultFactory = new ResultFactory<DeleteDonationsByUserIdResult>();
+
   constructor(
     @Inject(DONATION_REPOSITORY)
     private readonly donationRepository: DonationRepositoryPort,
@@ -22,6 +24,6 @@ export class DeleteDonationsByUserIdUseCase
   ): Promise<Result<DeleteDonationsByUserIdResult>> {
     const deletedCount = await this.donationRepository.deleteByUserId(userId);
 
-    return ResultFactory.success({ deletedCount });
+    return this.resultFactory.success({ deletedCount });
   }
 }

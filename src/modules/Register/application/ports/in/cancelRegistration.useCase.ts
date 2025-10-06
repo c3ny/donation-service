@@ -15,6 +15,8 @@ export class CancelRegistrationUseCase
   implements
     UseCase<string, Promise<Result<Registration, RegistrationErrorsEnum>>>
 {
+  private resultFactory = new RegistrationResultFactory<Registration>();
+
   constructor(
     @Inject(REGISTRATION_REPOSITORY)
     private readonly registrationRepository: RegistrationRepositoryPort,
@@ -26,7 +28,7 @@ export class CancelRegistrationUseCase
     const registration = await this.registrationRepository.findById(id);
 
     if (!registration) {
-      return RegistrationResultFactory.failure(
+      return this.resultFactory.failure(
         RegistrationErrorsEnum.RegistrationNotFound,
       );
     }
@@ -37,7 +39,7 @@ export class CancelRegistrationUseCase
     ];
 
     if (!statusAllowedToCancel.includes(registration.status)) {
-      return RegistrationResultFactory.failure(
+      return this.resultFactory.failure(
         RegistrationErrorsEnum.CannotCancelRegistration,
       );
     }
@@ -48,11 +50,11 @@ export class CancelRegistrationUseCase
     );
 
     if (!updatedRegistration) {
-      return RegistrationResultFactory.failure(
+      return this.resultFactory.failure(
         RegistrationErrorsEnum.RegistrationNotFound,
       );
     }
 
-    return RegistrationResultFactory.success(updatedRegistration);
+    return this.resultFactory.success(updatedRegistration);
   }
 }

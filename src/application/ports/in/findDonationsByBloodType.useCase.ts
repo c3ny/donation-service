@@ -12,6 +12,8 @@ import { UseCase } from 'src/types/useCase.types';
 export class FindDonationsByBloodTypeUseCase
   implements UseCase<BloodType, Promise<Result<Donation[]>>>
 {
+  private resultFactory = new ResultFactory<Donation[]>();
+
   constructor(
     @Inject(DONATION_REPOSITORY)
     private readonly donationRepository: DonationRepositoryPort,
@@ -20,6 +22,6 @@ export class FindDonationsByBloodTypeUseCase
   async execute(bloodType: BloodType): Promise<Result<Donation[]>> {
     const donations = await this.donationRepository.findByBloodType(bloodType);
 
-    return ResultFactory.success(donations);
+    return this.resultFactory.success(donations);
   }
 }

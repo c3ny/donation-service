@@ -12,17 +12,21 @@ import { ErrorsEnum } from 'src/application/core/errors/errors.enum';
 
 @Injectable()
 export class CreateDonationUseCase
-  implements UseCase<Donation, Promise<Result<Donation>>>
+  implements UseCase<Donation, Promise<Result<Donation, ErrorsEnum>>>
 {
+  private resultFactory = new ResultFactory<Donation, ErrorsEnum>();
+
   constructor(
     @Inject(DONATION_REPOSITORY)
     private readonly donationRepository: DonationRepositoryPort,
   ) {}
 
-  async execute(donation: Omit<Donation, 'id'>): Promise<Result<Donation>> {
+  async execute(
+    donation: Omit<Donation, 'id'>,
+  ): Promise<Result<Donation, ErrorsEnum>> {
     // Validate content is not empty
     if (!isValidContent(donation.content)) {
-      return ResultFactory.failure(ErrorsEnum.InvalidContent);
+      return this.resultFactory.failure(ErrorsEnum.InvalidContent);
     }
 
     // Sanitize content to prevent XSS attacks
@@ -33,6 +37,6 @@ export class CreateDonationUseCase
 
     const savedDonation = await this.donationRepository.save(sanitizedDonation);
 
-    return ResultFactory.success(savedDonation);
+    return this.resultFactory.success(savedDonation);
   }
 }

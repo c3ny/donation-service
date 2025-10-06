@@ -26,16 +26,16 @@ export type Result<T, E = ErrorsEnum> =
   | PartialSuccessResult<T>
   | FailureResult<E>;
 
-export class ResultFactory {
-  static success<T>(value: T): Result<T> {
+export class ResultFactory<T, E = ErrorsEnum> {
+  success(value: T): Result<T, E> {
     return { isSuccess: true, value };
   }
 
-  static failure<T, E = ErrorsEnum>(error: E): Result<T, E> {
+  failure(error: E): Result<T, E> {
     return { isSuccess: false, error };
   }
 
-  static partialSuccess<T>(value: T): Result<T> {
+  partialSuccess(value: T): Result<T, E> {
     return { isSuccess: true, value, isPartialSuccess: true };
   }
 }
