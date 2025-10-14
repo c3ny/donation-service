@@ -18,6 +18,7 @@ export class FindAllDonationsUseCase
 
   async execute(): Promise<Result<Donation[]>> {
     const donations = await this.donationRepository.findAll();
+
     return this.resultFactory.success(donations);
   }
 }

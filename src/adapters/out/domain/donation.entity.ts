@@ -31,6 +31,12 @@ export class Donation implements DonationDomain {
   bloodType: BloodType;
 
   @Prop()
+  image?: string;
+
+  @Prop()
+  name?: string;
+
+  @Prop()
   finishDate: Date;
 
   @Prop()

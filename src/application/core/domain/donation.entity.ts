@@ -30,6 +30,8 @@ export class Donation {
   startDate: DateType;
   location: Location;
   bloodType: BloodType;
+  image?: string;
+  name?: string;
   finishDate?: DateType;
   userId: string;
 }

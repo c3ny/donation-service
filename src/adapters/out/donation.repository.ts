@@ -1,17 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Donation } from './domain/donation.entity';
+import { Donation } from 'src/application/core/domain/donation.entity';
+import { Donation as DonationDocument } from './domain/donation.entity';
 import { Model } from 'mongoose';
 import { DonationRepositoryPort } from 'src/application/ports/out/donation-repostory.port';
 import {
   BloodType,
   DonationStatus,
 } from 'src/application/core/domain/donation.entity';
+import { DonationMapper } from './mapper/donation.mapper';
 
 @Injectable()
 export class DonationRepository implements DonationRepositoryPort {
   constructor(
-    @InjectModel(Donation.name) private donationModel: Model<Donation>,
+    @InjectModel(DonationDocument.name)
+    private donationModel: Model<DonationDocument>,
   ) {}
 
   async save(donation: Omit<Donation, 'id'>): Promise<Donation> {
@@ -25,7 +28,10 @@ export class DonationRepository implements DonationRepositoryPort {
   }
 
   async findAll(): Promise<Donation[]> {
-    return this.donationModel.find().exec();
+    const donations = await this.donationModel.find().exec();
+    return donations.map(
+      (donation): Donation => DonationMapper.toDomain(donation),
+    );
   }
 
   async findByBloodType(bloodType: BloodType): Promise<Donation[]> {
@@ -70,6 +76,7 @@ export class DonationRepository implements DonationRepositoryPort {
 
   async deleteByUserId(userId: string): Promise<number> {
     const result = await this.donationModel.deleteMany({ userId }).exec();
+
     return result.deletedCount || 0;
   }
 }
