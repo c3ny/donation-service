@@ -14,6 +14,7 @@ import { FindDonationsByBloodTypeUseCase } from './application/ports/in/findDona
 import { FindAllDonationsUseCase } from './application/ports/in/findAllDonations.useCase';
 import { DeleteDonationUseCase } from './application/ports/in/deleteDonation.useCase';
 import { DeleteDonationsByUserIdUseCase } from './application/ports/in/deleteDonationsByUserId.useCase';
+import { CountDonationsUseCase } from './application/ports/in/countDonations.useCase';
 import { RegisterModule } from './modules/Register/register.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { RegisterModule } from './modules/Register/register.module';
     FindAllDonationsUseCase,
     DeleteDonationUseCase,
     DeleteDonationsByUserIdUseCase,
+    CountDonationsUseCase,
   ],
 })
 export class AppModule {}

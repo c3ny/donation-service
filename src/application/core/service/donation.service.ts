@@ -14,6 +14,8 @@ import {
   DeleteDonationsByUserIdUseCase,
   DeleteDonationsByUserIdResult,
 } from 'src/application/ports/in/deleteDonationsByUserId.useCase';
+import { PaginationParams, PaginatedResult } from 'src/types/pagination.types';
+import { CountDonationsUseCase } from 'src/application/ports/in/countDonations.useCase';
 
 @Injectable()
 export class DonationService {
@@ -24,6 +26,7 @@ export class DonationService {
     private readonly findAllDonationsUseCase: FindAllDonationsUseCase,
     private readonly deleteDonationUseCase: DeleteDonationUseCase,
     private readonly deleteDonationsByUserIdUseCase: DeleteDonationsByUserIdUseCase,
+    private readonly countDonationsUseCase: CountDonationsUseCase,
   ) {}
 
   async createDonation(
@@ -45,8 +48,10 @@ export class DonationService {
     return this.findDonationsByBloodTypeUseCase.execute(bloodType);
   }
 
-  async findAllDonations(): Promise<Result<Donation[]>> {
-    return this.findAllDonationsUseCase.execute();
+  async findAllDonations(
+    params: PaginationParams,
+  ): Promise<Result<PaginatedResult<Donation>>> {
+    return this.findAllDonationsUseCase.execute(params);
   }
 
   async deleteDonation(id: string): Promise<Result<void>> {
@@ -57,5 +62,9 @@ export class DonationService {
     userId: string,
   ): Promise<Result<DeleteDonationsByUserIdResult>> {
     return this.deleteDonationsByUserIdUseCase.execute(userId);
+  }
+
+  async countDonations(): Promise<Result<number>> {
+    return this.countDonationsUseCase.execute();
   }
 }

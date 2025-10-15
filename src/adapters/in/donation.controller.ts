@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import {
   BloodType,
@@ -21,9 +22,44 @@ import { ErrorsEnum } from 'src/application/core/errors/errors.enum';
 export class DonationController {
   constructor(private readonly donationService: DonationService) {}
 
+  @Get('count')
+  async countDonations() {
+    const result = await this.donationService.countDonations();
+
+    if (!result.isSuccess) {
+      const error = result.error;
+      throw new HttpException(error, HttpStatus.BAD_REQUEST);
+    }
+
+    return { count: result.value };
+  }
+
   @Get()
-  async findAllDonations() {
-    const result = await this.donationService.findAllDonations();
+  async findAllDonations(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    if (isNaN(pageNumber) || pageNumber < 1) {
+      throw new HttpException(
+        'Page must be a positive number',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 100) {
+      throw new HttpException(
+        'Limit must be a positive number between 1 and 100',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const result = await this.donationService.findAllDonations({
+      page: pageNumber,
+      limit: limitNumber,
+    });
 
     if (!result.isSuccess) {
       const error = result.error;
