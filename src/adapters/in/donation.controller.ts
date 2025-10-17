@@ -34,6 +34,43 @@ export class DonationController {
     return { count: result.value };
   }
 
+  @Get('blood-type/:bloodType')
+  async findByBloodType(@Param('bloodType') bloodType: BloodType) {
+    const result =
+      await this.donationService.findDonationsByBloodType(bloodType);
+
+    if (!result.isSuccess) {
+      const error = result.error;
+
+      switch (error) {
+        case ErrorsEnum.DonationNotFound:
+          throw new HttpException(error, HttpStatus.NOT_FOUND);
+        default:
+          throw new HttpException(error, HttpStatus.BAD_REQUEST);
+      }
+    }
+
+    return result.value;
+  }
+
+  @Get(':id')
+  async findDonationById(@Param('id') id: string) {
+    const result = await this.donationService.findDonationById(id);
+
+    if (!result.isSuccess) {
+      const error = result.error;
+
+      switch (error) {
+        case ErrorsEnum.DonationNotFound:
+          throw new HttpException('Donation not found', HttpStatus.NOT_FOUND);
+        default:
+          throw new HttpException(error, HttpStatus.BAD_REQUEST);
+      }
+    }
+
+    return result.value;
+  }
+
   @Get()
   async findAllDonations(
     @Query('page') page: string = '1',
@@ -103,25 +140,6 @@ export class DonationController {
     @Body() status: { status: DonationStatus },
   ) {
     const result = await this.donationService.updateStatus(id, status.status);
-
-    if (!result.isSuccess) {
-      const error = result.error;
-
-      switch (error) {
-        case ErrorsEnum.DonationNotFound:
-          throw new HttpException(error, HttpStatus.NOT_FOUND);
-        default:
-          throw new HttpException(error, HttpStatus.BAD_REQUEST);
-      }
-    }
-
-    return result.value;
-  }
-
-  @Get('blood-type/:bloodType')
-  async findByBloodType(@Param('bloodType') bloodType: BloodType) {
-    const result =
-      await this.donationService.findDonationsByBloodType(bloodType);
 
     if (!result.isSuccess) {
       const error = result.error;
