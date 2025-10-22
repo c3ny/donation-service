@@ -17,15 +17,17 @@ import { DeleteDonationsByUserIdUseCase } from './application/ports/in/deleteDon
 import { CountDonationsUseCase } from './application/ports/in/countDonations.useCase';
 import { FindDonationByIdUseCase } from './application/ports/in/findDonationById.useCase';
 import { RegisterModule } from './modules/Register/register.module';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 @Module({
   imports: [
     MongooseModule.forRoot(
-      `mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@mongo_donation_service:27017/`,
-      {
-        dbName: 'donation',
-      },
-    ),
+  `mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DBNAME}?authSource=admin`,
+  { dbName: process.env.MONGO_DBNAME },
+),
+
     MongooseModule.forFeature([
       { name: Donation.name, schema: DonationSchema },
     ]),
@@ -44,5 +46,15 @@ import { RegisterModule } from './modules/Register/register.module';
     DeleteDonationsByUserIdUseCase,
     CountDonationsUseCase,
   ],
+  
 })
 export class AppModule {}
+
+console.log('MONGO ENV:', {
+  user: process.env.MONGO_INITDB_ROOT_USERNAME,
+  pass: process.env.MONGO_INITDB_ROOT_PASSWORD,
+  host: process.env.MONGO_HOST,
+  port: process.env.MONGO_PORT,
+  db: process.env.MONGO_DBNAME,
+});
+

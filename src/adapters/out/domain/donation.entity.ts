@@ -5,10 +5,11 @@ import {
   Location,
 } from 'src/application/core/domain/donation.entity';
 import { Donation as DonationDomain } from 'src/application/core/domain/donation.entity';
+import { Document } from 'mongoose';
 @Schema()
-export class Donation implements DonationDomain {
+export class Donation extends Document implements DonationDomain {
   @Prop()
-  id: string;
+  declare id: string;
 
   @Prop()
   status: DonationStatus;
@@ -41,6 +42,12 @@ export class Donation implements DonationDomain {
 
   @Prop()
   userId: string;
+
+  @Prop()
+  description: string;
+
+  @Prop()
+  phone: string;
 }
 
 export const DonationSchema = SchemaFactory.createForClass(Donation);

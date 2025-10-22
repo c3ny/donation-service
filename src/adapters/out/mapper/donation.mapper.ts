@@ -14,6 +14,8 @@ export class DonationMapper {
       name: donation.name,
       finishDate: donation.finishDate,
       userId: donation.userId,
+      description: donation.description,
+      phone: donation.phone,
     };
   }
 }

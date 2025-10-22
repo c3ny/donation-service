@@ -68,5 +68,8 @@ export function sanitizeContent(content: string): string {
 
 export function isValidContent(content: string): boolean {
   const sanitized = sanitizeContent(content);
-  return sanitized.length > 0;
+  const textPattern = /^[\p{L}\p{N}\s.,;:!?'"()\-–—/@#°ºª&%+]+$/u;
+
+
+  return sanitized.length > 0 && textPattern.test(sanitized);
 }

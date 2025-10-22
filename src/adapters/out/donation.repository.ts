@@ -34,7 +34,7 @@ export class DonationRepository implements DonationRepositoryPort {
       .exec();
 
     return donations.map(
-      (donation): Donation => DonationMapper.toDomain(donation),
+      (donation): Donation => DonationMapper.toDomain(donation as Donation & { _id: import('mongoose').Types.ObjectId }),
     );
   }
 
@@ -58,7 +58,7 @@ export class DonationRepository implements DonationRepositoryPort {
 
     return {
       data: donations.map(
-        (donation): Donation => DonationMapper.toDomain(donation),
+        (donation): Donation => DonationMapper.toDomain(donation as Donation & { _id: import('mongoose').Types.ObjectId }),
       ),
       metadata: {
         page,

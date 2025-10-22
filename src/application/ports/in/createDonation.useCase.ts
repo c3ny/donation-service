@@ -24,16 +24,37 @@ export class CreateDonationUseCase
   async execute(
     donation: Omit<Donation, 'id'>,
   ): Promise<Result<Donation, ErrorsEnum>> {
-    // Validate content is not empty
-    if (!isValidContent(donation.content)) {
+    console.log('🩸 Recebendo payload:', donation);
+    Object.entries(donation).forEach(([key, value]) => {
+      console.log(`   ➤ ${key}:`, typeof value, '| valor =', value);
+    });
+
+    // Campos que precisam de validação textual
+    const camposInvalidos: string[] = [];
+    const camposTextuais = ['name', 'phone', 'address', 'description'];
+
+    for (const campo of camposTextuais) {
+      const valor = (donation as any)[campo];
+      if (valor && !isValidContent(valor)) {
+        camposInvalidos.push(campo);
+      }
+    }
+
+    if (camposInvalidos.length > 0) {
+      console.log('⚠️ Conteúdo inválido detectado nos campos:', camposInvalidos);
+      console.log('🧾 Dados recebidos (com erro):', donation);
       return this.resultFactory.failure(ErrorsEnum.InvalidContent);
     }
 
-    // Sanitize content to prevent XSS attacks
+    // Sanitiza apenas campos textuais
     const sanitizedDonation = {
       ...donation,
-      content: sanitizeContent(donation.content),
+      name: sanitizeContent(donation.name ?? ''),
+      phone: sanitizeContent(donation.phone ?? ''),
+      description: sanitizeContent(donation.description ?? ''),
     };
+
+    console.log('✅ Conteúdo sanitizado:', sanitizedDonation);
 
     const savedDonation = await this.donationRepository.save(sanitizedDonation);
 

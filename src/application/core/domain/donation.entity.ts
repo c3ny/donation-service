@@ -32,6 +32,9 @@ export class Donation {
   bloodType: BloodType;
   image?: string;
   name?: string;
+  description: string;
   finishDate?: DateType;
   userId: string;
+  phone: string;
+  
 }

@@ -16,6 +16,11 @@ services:
       - .:/app
       - ./node_modules:/app/node_modules
     restart: unless-stopped
+    depends_on:
+      - mongo_donation_service
+    networks:
+      - donation_network
+
   mongo_donation_service:
     container_name: mongo_donation_service
     image: mongo
@@ -25,14 +30,16 @@ services:
     env_file:
       - .env
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
       - mongo_donation_service_data:/data/db
+    networks:
+      - donation_network
 
 volumes:
   mongo_donation_service_data:
 
-configs:
-  httpd-config:
-    external: true
+networks:
+  donation_network:
+    driver: bridge
