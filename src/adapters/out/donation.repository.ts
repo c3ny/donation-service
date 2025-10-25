@@ -44,12 +44,15 @@ export class DonationRepository implements DonationRepositoryPort {
     const { page, limit } = params;
     const skip = (page - 1) * limit;
 
+    // Ensure skip is not negative
+    const safeSkip = Math.max(0, skip);
+
     const [donations, total] = await Promise.all([
       this.donationModel
         .find()
-        .skip(skip)
+        .skip(safeSkip)
         .limit(limit)
-        .sort({ createdAt: -1 })
+        .sort({ createdAt: -1, _id: -1 }) // Sort by createdAt first, then _id as fallback
         .exec(),
       this.donationModel.countDocuments().exec(),
     ]);

@@ -51,3 +51,6 @@ export class Donation extends Document implements DonationDomain {
 }
 
 export const DonationSchema = SchemaFactory.createForClass(Donation);
+
+// Add timestamps to automatically manage createdAt and updatedAt
+DonationSchema.set('timestamps', true);

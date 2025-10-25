@@ -4,10 +4,7 @@ import { Result, ResultFactory } from 'src/types/result.types';
 import { Donation } from 'src/application/core/domain/donation.entity';
 import { DonationRepositoryPort } from '../out/donation-repostory.port';
 import { DONATION_REPOSITORY } from 'src/constants';
-import {
-  PaginationParams,
-  PaginatedResult,
-} from 'src/types/pagination.types';
+import { PaginationParams, PaginatedResult } from 'src/types/pagination.types';
 
 @Injectable()
 export class FindAllDonationsUseCase

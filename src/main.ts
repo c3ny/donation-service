@@ -1,16 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './donation.module';
+import { setupSwagger } from '../swagger/swagger.config';
 import 'dotenv/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const port = process.env.PORT ?? 3001;
+
   app.enableCors({
-  origin: ['http://localhost:3000'], // Permite o frontend
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  credentials: true,
-});
-  await app.listen(port, '0.0.0.0');
-  console.log(`🚀 Server is running on http://0.0.0.0:${port}`);
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    credentials: true,
+  });
+
+  setupSwagger(app);
+
+  await app.listen(port);
+
+  console.log(`🚀 Donation Service running on: http://localhost:${port}`);
+  console.log(`📚 API Documentation: http://localhost:${port}/api-docs`);
 }
+
 bootstrap();

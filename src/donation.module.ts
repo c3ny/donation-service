@@ -16,6 +16,7 @@ import { DeleteDonationUseCase } from './application/ports/in/deleteDonation.use
 import { DeleteDonationsByUserIdUseCase } from './application/ports/in/deleteDonationsByUserId.useCase';
 import { CountDonationsUseCase } from './application/ports/in/countDonations.useCase';
 import { FindDonationByIdUseCase } from './application/ports/in/findDonationById.useCase';
+import { AuthModule } from './infrastructure/auth/auth.module';
 import { RegisterModule } from './modules/Register/register.module';
 import * as dotenv from 'dotenv';
 
@@ -24,14 +25,15 @@ dotenv.config();
 @Module({
   imports: [
     MongooseModule.forRoot(
-  `mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DBNAME}?authSource=admin`,
-  { dbName: process.env.MONGO_DBNAME },
-),
+      `mongodb://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DBNAME}?authSource=admin`,
+      { dbName: process.env.MONGO_DBNAME },
+    ),
 
     MongooseModule.forFeature([
       { name: Donation.name, schema: DonationSchema },
     ]),
     RegisterModule,
+    AuthModule,
   ],
   controllers: [DonationController],
   providers: [
@@ -46,7 +48,6 @@ dotenv.config();
     DeleteDonationsByUserIdUseCase,
     CountDonationsUseCase,
   ],
-  
 })
 export class AppModule {}
 
@@ -57,4 +58,3 @@ console.log('MONGO ENV:', {
   port: process.env.MONGO_PORT,
   db: process.env.MONGO_DBNAME,
 });
-
