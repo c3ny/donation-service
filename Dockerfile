@@ -18,4 +18,4 @@ ENTRYPOINT ["/entrypoint.sh"]
 EXPOSE 8080 9229
 
 # Start com o inspector
-CMD ["node", "--inspect=0.0.0.0:9229", "dist/main.js"]
+CMD ["npm", "run", "start"]
