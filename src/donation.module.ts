@@ -21,18 +21,17 @@ import { RegisterModule } from './modules/Register/register.module';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
-const protocol = process.env.MONGO_HOST?.includes('mongodb.net')
-  ? 'mongodb+srv'
-  : 'mongodb';
-
-const mongoUri = `${protocol}://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}` +
-                 `@${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_DBNAME}?authSource=admin`;
-
 
 @Module({
   imports: [
-    MongooseModule.forRoot(mongoUri, { dbName: process.env.MONGO_DBNAME }),
-    MongooseModule.forFeature([{ name: Donation.name, schema: DonationSchema }]),
+    MongooseModule.forRoot(
+      `mongodb+srv://${process.env.MONGO_INITDB_ROOT_USERNAME}:${process.env.MONGO_INITDB_ROOT_PASSWORD}@${process.env.MONGO_HOST}/${process.env.MONGO_DBNAME}?appName=Cluster0`,
+      { dbName: process.env.MONGO_DBNAME },
+    ),
+
+    MongooseModule.forFeature([
+      { name: Donation.name, schema: DonationSchema },
+    ]),
     RegisterModule,
     AuthModule,
   ],
