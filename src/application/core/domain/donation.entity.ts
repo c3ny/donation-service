@@ -36,5 +36,6 @@ export class Donation {
   finishDate?: DateType;
   userId: string;
   phone: string;
+  quantity?: number;
   
 }

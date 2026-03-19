@@ -48,6 +48,9 @@ export class Donation extends Document implements DonationDomain {
 
   @Prop()
   phone: string;
+
+  @Prop()
+  quantity?: number;
 }
 
 export const DonationSchema = SchemaFactory.createForClass(Donation);

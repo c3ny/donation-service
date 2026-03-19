@@ -88,6 +88,12 @@ export class DonationResponseDto {
     example: 'https://example.com/donation-image.jpg',
   })
   image?: string;
+
+  @ApiPropertyOptional({
+    description: 'Number of blood bags needed',
+    example: 2,
+  })
+  quantity?: number;
 }
 
 export class PaginationMetadataDto {
