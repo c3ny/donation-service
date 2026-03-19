@@ -37,5 +37,4 @@ export class Donation {
   userId: string;
   phone: string;
   quantity?: number;
-  
 }
