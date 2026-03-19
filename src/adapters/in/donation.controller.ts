@@ -64,7 +64,8 @@ export class DonationController {
   @ApiResponse({ status: 200, type: [DonationResponseDto] })
   @ApiResponse({ status: 404, type: ErrorResponseDto })
   async findByBloodType(@Param('bloodType') bloodType: BloodType) {
-    const result = await this.donationService.findDonationsByBloodType(bloodType);
+    const result =
+      await this.donationService.findDonationsByBloodType(bloodType);
     if (!result.isSuccess) {
       const error = (result as any).error;
       switch (error) {
@@ -109,10 +110,16 @@ export class DonationController {
     const limitNumber = parseInt(limit, 10);
 
     if (isNaN(pageNumber) || pageNumber < 1) {
-      throw new HttpException('Page must be a positive number', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Page must be a positive number',
+        HttpStatus.BAD_REQUEST,
+      );
     }
     if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 100) {
-      throw new HttpException('Limit must be between 1 and 100', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Limit must be between 1 and 100',
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     const result = await this.donationService.findAllDonations({
@@ -139,7 +146,8 @@ export class DonationController {
       storage: diskStorage({
         destination: './uploads',
         filename: (_req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           cb(null, `donation-${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
@@ -168,7 +176,10 @@ export class DonationController {
       try {
         location = JSON.parse(location);
       } catch {
-        throw new HttpException('Invalid location format', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Invalid location format',
+          HttpStatus.BAD_REQUEST,
+        );
       }
     }
 
@@ -249,7 +260,10 @@ export class DonationController {
         case ErrorsEnum.DonationNotFound:
           throw new HttpException('Donation not found', HttpStatus.NOT_FOUND);
         default:
-          throw new HttpException(error ?? 'Error deleting donation', HttpStatus.BAD_REQUEST);
+          throw new HttpException(
+            error ?? 'Error deleting donation',
+            HttpStatus.BAD_REQUEST,
+          );
       }
     }
     return { message: 'Donation deleted successfully' };
