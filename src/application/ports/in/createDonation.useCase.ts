@@ -41,7 +41,10 @@ export class CreateDonationUseCase
     }
 
     if (camposInvalidos.length > 0) {
-      console.log('⚠️ Conteúdo inválido detectado nos campos:', camposInvalidos);
+      console.log(
+        '⚠️ Conteúdo inválido detectado nos campos:',
+        camposInvalidos,
+      );
       console.log('🧾 Dados recebidos (com erro):', donation);
       return this.resultFactory.failure(ErrorsEnum.InvalidContent);
     }

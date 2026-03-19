@@ -50,11 +50,3 @@ dotenv.config();
   ],
 })
 export class AppModule {}
-
-console.log('MONGO ENV:', {
-  user: process.env.MONGO_INITDB_ROOT_USERNAME,
-  pass: process.env.MONGO_INITDB_ROOT_PASSWORD,
-  host: process.env.MONGO_HOST,
-  port: process.env.MONGO_PORT,
-  db: process.env.MONGO_DBNAME,
-});
