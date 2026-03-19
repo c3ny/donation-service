@@ -21,7 +21,9 @@ export class DonationRepository implements DonationRepositoryPort {
   async save(donation: Omit<Donation, 'id'>): Promise<Donation> {
     const savedDonation = await this.donationModel.create(donation);
 
-    return savedDonation;
+    return DonationMapper.toDomain(
+      savedDonation as Donation & { _id: import('mongoose').Types.ObjectId },
+    );
   }
 
   async findById(id: string): Promise<Donation | null> {
@@ -34,7 +36,10 @@ export class DonationRepository implements DonationRepositoryPort {
       .exec();
 
     return donations.map(
-      (donation): Donation => DonationMapper.toDomain(donation as Donation & { _id: import('mongoose').Types.ObjectId }),
+      (donation): Donation =>
+        DonationMapper.toDomain(
+          donation as Donation & { _id: import('mongoose').Types.ObjectId },
+        ),
     );
   }
 
@@ -61,7 +66,10 @@ export class DonationRepository implements DonationRepositoryPort {
 
     return {
       data: donations.map(
-        (donation): Donation => DonationMapper.toDomain(donation as Donation & { _id: import('mongoose').Types.ObjectId }),
+        (donation): Donation =>
+          DonationMapper.toDomain(
+            donation as Donation & { _id: import('mongoose').Types.ObjectId },
+          ),
       ),
       metadata: {
         page,

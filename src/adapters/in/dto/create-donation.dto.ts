@@ -73,6 +73,15 @@ export class CreateDonationDto {
   @IsDateString()
   finishDate?: string;
 
+  @ApiPropertyOptional({
+    description: 'Number of blood bags needed',
+    example: 2,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  quantity?: number;
+
   @ApiProperty({
     description: 'Required blood type',
     enum: BloodType,
