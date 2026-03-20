@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -6,17 +6,10 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-RUN npm run build && ls -la dist/
+RUN npm run build
 
-# --- Production stage ---
-FROM node:20-alpine AS production
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
-
-COPY --from=builder /app/dist ./dist
+# Remove devDependencies after build to save memory
+RUN npm prune --omit=dev
 
 EXPOSE 8080
 
