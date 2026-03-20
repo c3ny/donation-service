@@ -1,21 +1,23 @@
-FROM node AS development
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-COPY package.json  ./
-COPY package-lock.json  ./
-
-RUN npm i
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
+RUN npm run build
 
-ENTRYPOINT ["/entrypoint.sh"]
+# --- Production stage ---
+FROM node:20-alpine AS production
 
-# Porta do NestJS (ex: 3000) + porta do debug (9229)
-EXPOSE 8080 9229
+WORKDIR /app
 
-# Start com o inspector
-CMD ["npm", "run", "start"]
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 8080
+
+CMD ["node", "dist/main"]
