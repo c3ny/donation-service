@@ -1,6 +1,6 @@
 {
   "name": "donation-service",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "",
   "author": "",
   "private": true,
@@ -75,6 +75,9 @@
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1"
+    },
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },

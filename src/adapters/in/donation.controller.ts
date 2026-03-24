@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpException,
   HttpStatus,
@@ -9,10 +10,12 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -59,9 +62,12 @@ export class DonationController {
   }
 
   @Get('blood-type/:bloodType')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get donations by blood type' })
   @ApiParam({ name: 'bloodType', enum: BloodType })
   @ApiResponse({ status: 200, type: [DonationResponseDto] })
+  @ApiResponse({ status: 401, type: ErrorResponseDto })
   @ApiResponse({ status: 404, type: ErrorResponseDto })
   async findByBloodType(@Param('bloodType') bloodType: BloodType) {
     const result =
@@ -79,9 +85,12 @@ export class DonationController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get donation by ID' })
   @ApiParam({ name: 'id' })
   @ApiResponse({ status: 200, type: DonationResponseDto })
+  @ApiResponse({ status: 401, type: ErrorResponseDto })
   @ApiResponse({ status: 404, type: ErrorResponseDto })
   async findDonationById(@Param('id') id: string) {
     const result = await this.donationService.findDonationById(id);
@@ -98,10 +107,13 @@ export class DonationController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all donations' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
   @ApiResponse({ status: 200, type: PaginatedDonationsResponseDto })
+  @ApiResponse({ status: 401, type: ErrorResponseDto })
   async findAllDonations(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -270,10 +282,23 @@ export class DonationController {
   }
 
   @Delete('user/:userId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Delete donations by user ID' })
   @ApiParam({ name: 'userId' })
   @ApiResponse({ status: 200, type: DeleteByUserIdResponseDto })
-  async deleteDonationsByUserId(@Param('userId') userId: string) {
+  @ApiResponse({ status: 401, type: ErrorResponseDto })
+  @ApiResponse({ status: 403, type: ErrorResponseDto })
+  async deleteDonationsByUserId(
+    @Param('userId') userId: string,
+    @Req() req: Request,
+  ) {
+    const authenticatedUserId = (req.user as any).userId;
+    if (authenticatedUserId !== userId) {
+      throw new ForbiddenException(
+        'You can only delete your own donations',
+      );
+    }
     const result = await this.donationService.deleteDonationsByUserId(userId);
     if (!result.isSuccess) {
       throw new HttpException(
