@@ -12,13 +12,8 @@ import {
   Query,
   Req,
   UseGuards,
-  UseInterceptors,
-  UploadedFile,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import {
   ApiTags,
   ApiOperation,
@@ -43,6 +38,7 @@ import {
   DeleteByUserIdResponseDto,
   ErrorResponseDto,
 } from './dto/donation-response.dto';
+import { CreateDonationDto } from './dto/create-donation.dto';
 
 @ApiTags('Donations')
 @Controller('/donations')
@@ -107,8 +103,6 @@ export class DonationController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all donations' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
@@ -153,48 +147,12 @@ export class DonationController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (_req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `donation-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-      fileFilter: (_req, file, cb) => {
-        const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        if (allowed.includes(file.mimetype)) {
-          cb(null, true);
-        } else {
-          cb(new Error('Only JPEG, PNG and WEBP images are allowed'), false);
-        }
-      },
-      limits: { fileSize: 5 * 1024 * 1024 },
-    }),
-  )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Create donation' })
   @ApiResponse({ status: 201, type: DonationResponseDto })
   @ApiResponse({ status: 400, type: ErrorResponseDto })
   @ApiResponse({ status: 401, type: ErrorResponseDto })
-  async createDonation(
-    @Body() body: Record<string, any>,
-    @UploadedFile() file?: Express.Multer.File,
-  ) {
-    let location = body.location;
-    if (typeof location === 'string') {
-      try {
-        location = JSON.parse(location);
-      } catch {
-        throw new HttpException(
-          'Invalid location format',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
-
+  async createDonation(@Body() body: CreateDonationDto) {
     const donation: Omit<Donation, 'id'> = {
       status: body.status,
       content: body.content,
@@ -202,15 +160,15 @@ export class DonationController {
       finishDate: body.finishDate,
       bloodType: body.bloodType,
       location: {
-        latitude: Number(location?.latitude),
-        longitude: Number(location?.longitude),
+        latitude: body.location.latitude,
+        longitude: body.location.longitude,
       },
       userId: body.userId,
       name: body.name,
       description: body.description ?? '',
       phone: body.phone ?? '',
-      image: file ? `/uploads/${file.filename}` : body.image,
-      quantity: body.quantity ? Number(body.quantity) : undefined,
+      image: body.image,
+      quantity: body.quantity,
     };
 
     const result = await this.donationService.createDonation(donation);
@@ -295,9 +253,7 @@ export class DonationController {
   ) {
     const authenticatedUserId = (req.user as any).userId;
     if (authenticatedUserId !== userId) {
-      throw new ForbiddenException(
-        'You can only delete your own donations',
-      );
+      throw new ForbiddenException('You can only delete your own donations');
     }
     const result = await this.donationService.deleteDonationsByUserId(userId);
     if (!result.isSuccess) {
