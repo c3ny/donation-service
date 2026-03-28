@@ -1,16 +1,23 @@
-FROM node:20-alpine
-
+FROM node:22-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
 
+FROM node:22-alpine AS builder
+WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-
 COPY . .
 RUN npm run build
 
-# Remove devDependencies after build to save memory
-RUN npm prune --omit=dev
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
 
-EXPOSE 8080
+COPY --from=builder /app/dist ./dist
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
 
+USER node
+EXPOSE 3001
 CMD ["node", "dist/src/main"]

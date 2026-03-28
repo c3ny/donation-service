@@ -1,12 +1,11 @@
 import { NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './donation.module';
 import { setupSwagger } from '../swagger/swagger.config';
-import { join } from 'path';
 import 'dotenv/config';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create(AppModule);
   const port = process.env.PORT ?? 3001;
 
   const corsOrigins = process.env.CORS_ORIGINS
@@ -18,9 +17,9 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useStaticAssets(join(__dirname, '..', '..', 'uploads'), {
-    prefix: '/uploads/',
-  });
+  app.useGlobalPipes(
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+  );
 
   setupSwagger(app);
 
@@ -30,4 +29,4 @@ async function bootstrap() {
   console.log(`📚 API Documentation: http://localhost:${port}/api-docs`);
 }
 
-bootstrap();
+void bootstrap();

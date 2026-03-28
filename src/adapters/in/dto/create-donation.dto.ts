@@ -115,13 +115,33 @@ export class CreateDonationDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'URL to an image related to the donation request',
-    example: 'https://example.com/donation-image.jpg',
+    description:
+      'URL to an image related to the donation request (Cloudinary URL from cdn-service)',
+    example:
+      'https://res.cloudinary.com/demo/image/upload/sangue-solidario/donations/abc.jpg',
     format: 'uri',
   })
   @IsOptional()
   @IsString()
   image?: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional description of the donation request',
+    example: 'Patient needs urgent surgery',
+    maxLength: 2000,
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Contact phone number',
+    example: '+55 11 98765-4321',
+    maxLength: 20,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
 }
 
 export class UpdateDonationStatusDto {
