@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AppLoggerService } from '../../shared/logger/app-logger.service';
 import { REGISTRATION_REPOSITORY } from './constants';
 import { RegistrationRepository } from './adapters/out/registration.repository';
 import { RegistrationController } from './adapters/in/registration.controller';
@@ -22,6 +23,10 @@ import { CancelRegistrationUseCase } from './application/ports/in/cancelRegistra
   ],
   controllers: [RegistrationController],
   providers: [
+    {
+      provide: AppLoggerService,
+      useFactory: () => new AppLoggerService('donation-service'),
+    },
     {
       provide: REGISTRATION_REPOSITORY,
       useClass: RegistrationRepository,
