@@ -16,6 +16,7 @@ import {
 } from '../../ports/in/updateRegistrationStatus.useCase';
 import { CancelRegistrationUseCase } from '../../ports/in/cancelRegistration.useCase';
 import { RegistrationErrorsEnum } from '../errors/errors.enum';
+import { AppLoggerService } from 'src/shared/logger/app-logger.service';
 
 @Injectable()
 export class RegistrationService {
@@ -25,12 +26,19 @@ export class RegistrationService {
     private readonly findRegistrationsByUserUseCase: FindRegistrationsByUserUseCase,
     private readonly updateRegistrationStatusUseCase: UpdateRegistrationStatusUseCase,
     private readonly cancelRegistrationUseCase: CancelRegistrationUseCase,
+    private readonly logger: AppLoggerService,
   ) {}
 
   async createRegistration(
     input: CreateRegistrationInput,
   ): Promise<Result<Registration, RegistrationErrorsEnum>> {
-    return this.createRegistrationUseCase.execute(input);
+    const result = await this.createRegistrationUseCase.execute(input);
+    if (result.isSuccess) {
+      this.logger.info('Registration created', { registrationId: result.value.id, donationId: input.donationId, userId: input.userId });
+    } else {
+      this.logger.warn('Failed to create registration', { error: result.error, donationId: input.donationId, userId: input.userId });
+    }
+    return result;
   }
 
   async findRegistrationsByDonation(
@@ -50,12 +58,24 @@ export class RegistrationService {
     status: RegistrationStatus,
   ): Promise<Result<Registration, RegistrationErrorsEnum>> {
     const input: UpdateRegistrationStatusInput = { id, status };
-    return this.updateRegistrationStatusUseCase.execute(input);
+    const result = await this.updateRegistrationStatusUseCase.execute(input);
+    if (result.isSuccess) {
+      this.logger.info('Registration status updated', { registrationId: id, status });
+    } else {
+      this.logger.warn('Failed to update registration status', { registrationId: id, status, error: result.error });
+    }
+    return result;
   }
 
   async cancelRegistration(
     id: string,
   ): Promise<Result<Registration, RegistrationErrorsEnum>> {
-    return this.cancelRegistrationUseCase.execute(id);
+    const result = await this.cancelRegistrationUseCase.execute(id);
+    if (result.isSuccess) {
+      this.logger.info('Registration cancelled', { registrationId: id });
+    } else {
+      this.logger.warn('Failed to cancel registration', { registrationId: id, error: result.error });
+    }
+    return result;
   }
 }

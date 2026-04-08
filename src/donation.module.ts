@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { AppLoggerService } from './shared/logger/app-logger.service';
+import { HttpLoggingInterceptor } from './shared/interceptors/http-logging.interceptor';
+import { AllExceptionsFilter } from './shared/filters/all-exceptions.filter';
 import { DonationController } from './adapters/in/donation.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
@@ -37,6 +41,9 @@ dotenv.config();
   ],
   controllers: [DonationController],
   providers: [
+    { provide: AppLoggerService, useFactory: () => new AppLoggerService('donation-service') },
+    { provide: APP_INTERCEPTOR, useClass: HttpLoggingInterceptor },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: DONATION_REPOSITORY, useClass: DonationRepository },
     CreateDonationUseCase,
     DonationService,
