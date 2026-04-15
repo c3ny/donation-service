@@ -103,6 +103,8 @@ export class DonationController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get all donations' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
@@ -152,7 +154,11 @@ export class DonationController {
   @ApiResponse({ status: 201, type: DonationResponseDto })
   @ApiResponse({ status: 400, type: ErrorResponseDto })
   @ApiResponse({ status: 401, type: ErrorResponseDto })
-  async createDonation(@Body() body: CreateDonationDto) {
+  async createDonation(
+    @Body() body: CreateDonationDto,
+    @Req() req: Request,
+  ) {
+    const authenticatedUserId = (req.user as { userId: string }).userId;
     const donation: Omit<Donation, 'id'> = {
       status: body.status,
       content: body.content,
@@ -163,7 +169,7 @@ export class DonationController {
         latitude: body.location.latitude,
         longitude: body.location.longitude,
       },
-      userId: body.userId,
+      userId: authenticatedUserId,
       name: body.name,
       description: body.description ?? '',
       phone: body.phone ?? '',
@@ -201,7 +207,18 @@ export class DonationController {
   async updateStatus(
     @Param('id') id: string,
     @Body() status: { status: DonationStatus },
+    @Req() req: Request,
   ) {
+    const existing = await this.donationService.findDonationById(id);
+    if (!existing.isSuccess) {
+      throw new HttpException('Donation not found', HttpStatus.NOT_FOUND);
+    }
+    const authenticatedUserId = (req.user as { userId: string }).userId;
+    if (existing.value.userId !== authenticatedUserId) {
+      throw new ForbiddenException(
+        'You can only update your own donations',
+      );
+    }
     const result = await this.donationService.updateStatus(id, status.status);
     if (!result.isSuccess) {
       const error = (result as any).error;
@@ -222,7 +239,17 @@ export class DonationController {
   @ApiParam({ name: 'id' })
   @ApiResponse({ status: 200, type: DeleteResponseDto })
   @ApiResponse({ status: 404, type: ErrorResponseDto })
-  async deleteDonation(@Param('id') id: string) {
+  async deleteDonation(@Param('id') id: string, @Req() req: Request) {
+    const existing = await this.donationService.findDonationById(id);
+    if (!existing.isSuccess) {
+      throw new HttpException('Donation not found', HttpStatus.NOT_FOUND);
+    }
+    const authenticatedUserId = (req.user as { userId: string }).userId;
+    if (existing.value.userId !== authenticatedUserId) {
+      throw new ForbiddenException(
+        'You can only delete your own donations',
+      );
+    }
     const result = await this.donationService.deleteDonation(id);
     if (!result.isSuccess) {
       const error = (result as any).error;

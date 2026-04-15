@@ -1,20 +1,26 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpException,
   HttpStatus,
   Param,
   Patch,
   Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/infrastructure/auth/jwt-auth.guard';
 import { RegistrationService } from '../../application/core/service/registration.service';
 import { RegistrationErrorsEnum } from '../../application/core/errors/errors.enum';
 import { RegistrationStatus } from '../../application/core/domain/registration.entity';
@@ -31,6 +37,8 @@ export class RegistrationController {
   constructor(private readonly registrationService: RegistrationService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Create registration',
     description: 'Register a user as a donor for a donation request.',
@@ -79,9 +87,15 @@ export class RegistrationController {
     type: ErrorResponseDto,
   })
   async createRegistration(
-    @Body() body: { donationId: string; userId: string; notes?: string },
+    @Body() body: CreateRegistrationDto,
+    @Req() req: Request,
   ) {
-    const result = await this.registrationService.createRegistration(body);
+    const authenticatedUserId = (req.user as { userId: string }).userId;
+    const result = await this.registrationService.createRegistration({
+      donationId: body.donationId,
+      userId: authenticatedUserId,
+      notes: body.notes,
+    });
 
     if (!result.isSuccess) {
       const error = result.error;
@@ -103,6 +117,8 @@ export class RegistrationController {
   }
 
   @Get('donation/:donationId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get registrations by donation',
     description: 'Get all registrations for a specific donation request.',
@@ -135,6 +151,8 @@ export class RegistrationController {
   }
 
   @Get('user/:userId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get registrations by user',
     description: 'Get all registrations made by a specific user.',
@@ -155,7 +173,16 @@ export class RegistrationController {
     description: 'Bad Request',
     type: ErrorResponseDto,
   })
-  async findRegistrationsByUser(@Param('userId') userId: string) {
+  async findRegistrationsByUser(
+    @Param('userId') userId: string,
+    @Req() req: Request,
+  ) {
+    const authenticatedUserId = (req.user as { userId: string }).userId;
+    if (authenticatedUserId !== userId) {
+      throw new ForbiddenException(
+        'You can only view your own registrations',
+      );
+    }
     const result =
       await this.registrationService.findRegistrationsByUser(userId);
 
@@ -167,6 +194,8 @@ export class RegistrationController {
   }
 
   @Patch(':id/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Update registration status',
     description: 'Update the status of a registration.',
@@ -244,6 +273,8 @@ export class RegistrationController {
   }
 
   @Patch(':id/cancel')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Cancel registration',
     description: 'Cancel a registration.',
