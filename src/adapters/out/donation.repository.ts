@@ -52,14 +52,21 @@ export class DonationRepository implements DonationRepositoryPort {
     // Ensure skip is not negative
     const safeSkip = Math.max(0, skip);
 
+    // Listagem publica exibe apenas solicitacoes ativas.
+    // COMPLETED (encerradas manualmente ou via autoCompleteExpired) e
+    // CANCELED nao devem aparecer em /solicitacoes.
+    const activeFilter = {
+      status: { $in: [DonationStatus.PENDING, DonationStatus.APPROVED] },
+    };
+
     const [donations, total] = await Promise.all([
       this.donationModel
-        .find()
+        .find(activeFilter)
         .skip(safeSkip)
         .limit(limit)
         .sort({ createdAt: -1, _id: -1 }) // Sort by createdAt first, then _id as fallback
         .exec(),
-      this.donationModel.countDocuments().exec(),
+      this.donationModel.countDocuments(activeFilter).exec(),
     ]);
 
     const totalPages = Math.ceil(total / limit);
@@ -82,6 +89,39 @@ export class DonationRepository implements DonationRepositoryPort {
 
   async findByBloodType(bloodType: BloodType): Promise<Donation[]> {
     return this.donationModel.find({ bloodType }).exec();
+  }
+
+  async findByUserId(
+    userId: string,
+    params: PaginationParams,
+  ): Promise<PaginatedResult<Donation>> {
+    const { page, limit } = params;
+    const safeSkip = Math.max(0, (page - 1) * limit);
+
+    const [donations, total] = await Promise.all([
+      this.donationModel
+        .find({ userId })
+        .skip(safeSkip)
+        .limit(limit)
+        .sort({ createdAt: -1, _id: -1 })
+        .exec(),
+      this.donationModel.countDocuments({ userId }).exec(),
+    ]);
+
+    return {
+      data: donations.map(
+        (donation): Donation =>
+          DonationMapper.toDomain(
+            donation as Donation & { _id: import('mongoose').Types.ObjectId },
+          ),
+      ),
+      metadata: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async updateStatus(
@@ -128,5 +168,25 @@ export class DonationRepository implements DonationRepositoryPort {
 
   async count(): Promise<number> {
     return this.donationModel.countDocuments().exec();
+  }
+
+  async autoCompleteExpired(now: Date = new Date()): Promise<number> {
+    // finishDate e o ULTIMO dia valido: expira no dia seguinte, nao no inicio
+    // do proprio finishDate. Comparar com o inicio do dia atual (00:00:00)
+    // garante que solicitacoes com finishDate = hoje continuem ativas.
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const result = await this.donationModel
+      .updateMany(
+        {
+          finishDate: { $exists: true, $ne: null, $lt: startOfToday },
+          status: { $in: [DonationStatus.PENDING, DonationStatus.APPROVED] },
+        },
+        { $set: { status: DonationStatus.COMPLETED } },
+      )
+      .exec();
+
+    return result.modifiedCount ?? 0;
   }
 }
