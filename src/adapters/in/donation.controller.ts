@@ -57,6 +57,48 @@ export class DonationController {
     return { count: result.value };
   }
 
+  @Get('user/:userId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: "Get authenticated user's donations (paginated)" })
+  @ApiParam({ name: 'userId' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 10 })
+  @ApiResponse({ status: 200, type: PaginatedDonationsResponseDto })
+  @ApiResponse({ status: 403, type: ErrorResponseDto })
+  async findDonationsByUserId(
+    @Param('userId') userId: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Req() req: Request,
+  ) {
+    const authenticatedUserId = (req.user as { userId: string }).userId;
+    if (authenticatedUserId !== userId) {
+      throw new ForbiddenException('You can only list your own donations');
+    }
+
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+
+    if (isNaN(pageNumber) || pageNumber < 1) {
+      throw new HttpException(
+        'Page must be a positive number',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (isNaN(limitNumber) || limitNumber < 1 || limitNumber > 100) {
+      throw new HttpException(
+        'Limit must be between 1 and 100',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    return this.donationService.findDonationsByUserId(userId, {
+      page: pageNumber,
+      limit: limitNumber,
+    });
+  }
+
   @Get('blood-type/:bloodType')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
@@ -103,13 +145,12 @@ export class DonationController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Get all donations' })
+  @ApiOperation({
+    summary: 'Get all active donations (PENDING + APPROVED) — public',
+  })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
   @ApiResponse({ status: 200, type: PaginatedDonationsResponseDto })
-  @ApiResponse({ status: 401, type: ErrorResponseDto })
   async findAllDonations(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
